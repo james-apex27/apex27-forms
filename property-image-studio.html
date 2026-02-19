@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Property Image Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e0f11;--surface:#16181c;--surface-2:#1e2026;--surface-3:#272a30;--border:#2a2d34;--border-light:#353840;--text:#e8e9ec;--text-dim:#8b8f98;--text-muted:#5c6070;--accent:#4a9eff;--accent-glow:rgba(74,158,255,0.15);--accent-2:#34d399;--accent-3:#f59e0b;--danger:#ef4444;--radius:10px;--radius-lg:16px;--transition:0.2s cubic-bezier(0.4,0,0.2,1);--font-body:'DM Sans',sans-serif;--font-display:'Fraunces',serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:6px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px}
+
+.header{position:sticky;top:0;z-index:100;background:rgba(14,15,17,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.header-left{display:flex;align-items:center;gap:10px}
+.header-right{display:flex;align-items:center;gap:8px}
+.property-badge{background:var(--surface-2);border:1px solid var(--border);padding:4px 12px;border-radius:20px;font-size:12px;color:var(--text-dim);max-width:500px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.status-sstc{background:rgba(245,158,11,0.15);color:var(--accent-3)}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-family:var(--font-body);font-size:12px;font-weight:500;border:none;cursor:pointer;transition:all var(--transition);white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#5babff}.btn-primary:disabled{opacity:.4;pointer-events:none}
+.btn-ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border)}.btn-ghost:hover{background:var(--surface-2);color:var(--text)}
+.btn-danger{background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid rgba(239,68,68,0.2)}.btn-danger:hover{background:rgba(239,68,68,0.2)}
+.btn-success{background:var(--accent-2);color:#0e0f11;font-weight:600}.btn-success:hover{background:#47dea8}.btn-success:disabled{opacity:.4;pointer-events:none}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn svg{width:15px;height:15px}
+
+.loading-screen,.error-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:20px;padding:32px}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--text-dim);font-size:13px}
+
+/* Layout: editor left, thumbs right */
+.main{max-width:1100px;margin:0 auto;padding:16px 20px 120px;display:flex;gap:16px}
+.left-col{flex:1;min-width:0}
+.right-col{width:180px;min-width:180px}
+
+/* Thumbnail grid */
+.thumb-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;max-height:calc(100vh - 100px);overflow-y:auto;position:sticky;top:68px;padding-right:2px}
+.image-thumb{aspect-ratio:4/3;border-radius:6px;overflow:hidden;cursor:pointer;position:relative;border:2px solid transparent;transition:all var(--transition)}
+.image-thumb:hover{border-color:var(--border-light)}
+.image-thumb.active{border-color:var(--accent);box-shadow:0 0 10px var(--accent-glow)}
+.image-thumb.edited::after{content:'✓';position:absolute;top:3px;right:3px;width:15px;height:15px;background:var(--accent-2);color:#000;font-size:8px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.image-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+
+.nav-arrows{display:flex;gap:3px}
+.nav-arrow{width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text-dim);transition:all var(--transition)}
+.nav-arrow:hover{background:var(--surface-3);color:var(--text)}.nav-arrow:disabled{opacity:.3;pointer-events:none}
+.nav-arrow svg{width:15px;height:15px}
+
+/* Editor card */
+.image-editor{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+
+/* Action bar — categorised rows */
+.action-bar{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.action-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.action-row-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);padding:3px 0;min-width:56px;flex-shrink:0}
+.action-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;font-family:var(--font-body);font-size:11px;font-weight:500;color:var(--text-dim);cursor:pointer;transition:all var(--transition);white-space:nowrap}
+.action-btn:hover{background:var(--surface-3);color:var(--text);border-color:var(--border-light)}
+.action-btn:disabled{opacity:.35;pointer-events:none}
+.action-btn .icon{font-size:12px;line-height:1}
+
+/* Image display */
+.image-preview-container{position:relative;background:#0a0b0d;display:flex;align-items:center;justify-content:center;min-height:360px;overflow:hidden}
+.image-preview-container>img{max-width:100%;max-height:520px;object-fit:contain;display:block}
+
+/* Comparison slider */
+.comparison-container{position:relative;overflow:hidden;background:#0a0b0d;cursor:col-resize;user-select:none;-webkit-user-select:none}
+.comparison-before{position:relative;z-index:1;line-height:0}
+.comparison-before img{display:block;width:100%;height:auto}
+.comparison-after{position:absolute;top:0;left:0;bottom:0;z-index:2;overflow:hidden;width:50%}
+.comparison-after img{display:block;height:100%;position:absolute;top:0;left:0}
+.comparison-slider-line{position:absolute;top:0;bottom:0;z-index:3;width:3px;background:#fff;box-shadow:0 0 6px rgba(0,0,0,.6),0 0 20px rgba(0,0,0,.3);left:50%;transform:translateX(-50%);pointer-events:none}
+.comparison-slider-handle{position:absolute;z-index:4;top:50%;left:50%;transform:translate(-50%,-50%);width:38px;height:38px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 14px rgba(0,0,0,.5);pointer-events:none}
+.comparison-slider-handle svg{width:18px;height:18px;color:#0e0f11}
+.comparison-label-before,.comparison-label-after{position:absolute;top:10px;z-index:5;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);padding:3px 8px;border-radius:5px;font-size:10px;font-weight:500;color:var(--text-dim);pointer-events:none}
+.comparison-label-before{left:10px}.comparison-label-after{right:10px}
+
+/* Below image */
+.custom-prompt-row{display:flex;gap:6px;padding:10px 14px;border-top:1px solid var(--border)}
+.custom-prompt-input{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:20px;padding:7px 14px;color:var(--text);font-family:var(--font-body);font-size:12px}
+.custom-prompt-input:focus{outline:none;border-color:var(--accent)}
+.custom-prompt-input::placeholder{color:var(--text-muted)}
+.toggle-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted)}
+.toggle-label{flex:1}
+.toggle-switch{position:relative;width:34px;height:18px;background:var(--surface-3);border-radius:9px;cursor:pointer;transition:background var(--transition);border:1px solid var(--border);flex-shrink:0}
+.toggle-switch.active{background:var(--accent);border-color:var(--accent)}
+.toggle-switch::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;background:#fff;border-radius:50%;transition:transform var(--transition)}
+.toggle-switch.active::after{transform:translateX(16px)}
+
+/* Processing */
+.processing-overlay{position:absolute;inset:0;background:rgba(14,15,17,.85);backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:10}
+.processing-text{color:var(--text-dim);font-size:13px}
+.progress-bar{width:180px;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;animation:indeterminate 1.5s ease-in-out infinite}
+@keyframes indeterminate{0%{width:0;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0;margin-left:100%}}
+
+.ai-watermark{position:absolute;bottom:10px;right:10px;z-index:6;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);padding:4px 8px;border-radius:5px;font-size:9px;font-weight:600;color:rgba(255,255,255,.75);letter-spacing:.3px;pointer-events:none;display:flex;align-items:center;gap:4px}
+
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(14,15,17,.92);backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;z-index:100}
+.edit-count{font-size:12px;color:var(--text-dim)}.edit-count strong{color:var(--accent);font-weight:600}
+.bottom-actions{display:flex;gap:8px}
+
+.toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:var(--surface-2);border:1px solid var(--border-light);border-radius:var(--radius);padding:10px 18px;font-size:12px;color:var(--text);box-shadow:0 12px 40px rgba(0,0,0,.4);z-index:200;opacity:0;pointer-events:none;transition:all .3s}
+.toast.show{opacity:1;pointer-events:auto}.toast.success{border-color:var(--accent-2)}.toast.error{border-color:var(--danger)}
+
+.saving-overlay{position:fixed;inset:0;background:rgba(14,15,17,.92);backdrop-filter:blur(20px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:500}
+.saving-overlay h2{font-family:var(--font-display);font-size:20px}
+
+@media(max-width:800px){
+  .main{flex-direction:column-reverse;gap:12px}
+  .right-col{width:100%;min-width:unset}
+  .thumb-grid{grid-template-columns:repeat(auto-fill,minmax(70px,1fr));max-height:none;position:static}
+  .header{padding:0 12px;height:48px}
+  .main{padding:12px 12px 120px}
+  .bottom-bar{padding:8px 12px}
+  .property-badge{max-width:180px;font-size:11px}
+  .action-btn{padding:4px 8px;font-size:10px}
+  .action-row-label{min-width:44px;font-size:8px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script>
+const STATE={listing:null,images:[],selectedImageIndex:0,editedImages:{},apiKey:null,loading:true,error:null,processing:false,saving:false,aiWatermark:true};
+const WEBHOOK_URL='https://n8n.apex27.co.uk/webhook/b3551e79-8c4f-45ef-849b-625b7611d6a8';
+const SAVE_URL='https://n8n.apex27.co.uk/webhook/74a8bdcb-65bb-4acd-b418-17887524c215';
+const IMAGE_PROXY_URL='https://n8n.apex27.co.uk/webhook/image-proxy';
+
+const ACTIONS_CLEANUP=[
+  {id:'remove_pii',label:'PII',icon:'🔒',prompt:'Remove all personally identifiable information from this image, including photos of people, names, addresses visible on mail or documents, phone numbers, and any other personal details. Replace removed areas with contextually appropriate content.'},
+  {id:'tidy',label:'Tidy Up',icon:'✨',prompt:'Tidy up this room photo by removing clutter, straightening items, and making the space look clean and well-organised. Keep the room layout and furniture the same but remove mess, personal items, and disorganisation.'},
+  {id:'remove_bins',label:'Bins',icon:'🗑️',prompt:'Remove all wheelie bins, recycling bins, rubbish bins, and waste containers from this property photo. Fill the areas where they were with contextually appropriate content that matches the surrounding environment seamlessly.'},
+  {id:'remove_boards',label:'Boards',icon:'🪧',prompt:'Remove all estate agency boards, for sale signs, to let signs, sold signs, and any property marketing boards from this image. Fill the areas where they were with contextually appropriate content that matches the surroundings.'},
+  {id:'remove_cars',label:'Cars',icon:'🚗',prompt:'Remove all cars, vans, and vehicles from this property photo including those parked on driveways, in front of the property, or on the street. Replace with clean driveway, road, or appropriate ground surface.'},
+  {id:'remove_people',label:'People',icon:'👤',prompt:'Remove all people, pedestrians, and passers-by from this property photo. Fill the areas where they were with contextually appropriate background content that matches the surrounding environment.'},
+];
+const ACTIONS_ENHANCE=[
+  {id:'enhance',label:'Enhance',icon:'📸',prompt:'Enhance this real estate photo by improving lighting, correcting white balance, increasing clarity and sharpness, and making colours more vibrant. Make it look professionally shot while keeping it realistic.'},
+  {id:'blue_sky',label:'Blue Sky',icon:'☀️',prompt:'Replace the sky in this exterior property photo with a beautiful clear blue sky with a few white clouds. Ensure the lighting on the building matches the new sky. Keep everything else identical.'},
+  {id:'dusk_shot',label:'Dusk',icon:'🌅',prompt:'Transform this exterior property photo into a dramatic twilight/dusk shot. Make the sky a beautiful deep blue/orange sunset gradient, add warm interior lighting glowing from the windows, and adjust the overall lighting to create an atmospheric evening scene. Keep the property identical.'},
+  {id:'remove_weeds',label:'Fix Garden',icon:'🌿',prompt:'Tidy up the garden and exterior landscaping in this property photo. Remove visible weeds, overgrown areas, and untidy patches. Make the lawn look freshly mowed, edges neat, and flower beds tidy. Keep the overall garden layout the same.'},
+  {id:'straighten',label:'Straighten',icon:'📐',prompt:'Correct the vertical and horizontal perspective lines in this property photo. Make sure walls, door frames, and window frames are perfectly straight and vertical. Correct any lens distortion or tilting while keeping the image looking natural.'},
+];
+const STAGING_STYLES=[
+  {id:'empty',label:'Empty Room',icon:'🏠',prompt:'Remove all furniture, decorations, and personal items from this room. Show the room completely empty with clean walls, flooring, and fixtures only. Make it look like a freshly cleaned vacant space ready for viewing.'},
+  {id:'modern',label:'Modern',icon:'🔲',prompt:'Virtually stage this room in a modern contemporary style with clean-lined furniture, neutral tones with bold accents, minimalist decor, and contemporary lighting.'},
+  {id:'scandi',label:'Scandi',icon:'🪵',prompt:'Virtually stage this room in a Scandinavian style with light wood furniture, white and grey tones, natural textures, cosy throws, and minimal but warm decor.'},
+  {id:'traditional',label:'Traditional',icon:'🏛️',prompt:'Virtually stage this room in a classic traditional British style with warm wood furniture, rich fabrics, tasteful artwork, table lamps, and a cosy, lived-in but elegant feel.'},
+  {id:'luxury',label:'Luxury',icon:'💎',prompt:'Virtually stage this room in a high-end luxury style with designer furniture, premium materials like marble and brass, statement lighting, and sophisticated art.'},
+  {id:'boho',label:'Boho',icon:'🌻',prompt:'Virtually stage this room in a bohemian style with eclectic furnishings, warm earthy tones, plants, woven textures, layered rugs, and artisan decor.'},
+  {id:'mid_century',label:'Mid-Century',icon:'🪑',prompt:'Virtually stage this room in a mid-century modern style with iconic furniture shapes, warm wood tones, mustard and teal accents, retro lighting, and geometric patterns.'},
+  {id:'coastal',label:'Coastal',icon:'🌊',prompt:'Virtually stage this room in a coastal style with light blues and whites, natural wood and rattan furniture, ocean-inspired accents, and an airy, beachy feel.'},
+];
+
+function formatStatus(s){return{sold_subject_to_contract:'SSTC',for_sale:'For Sale',under_offer:'Under Offer',exchanged:'Exchanged',completed:'Completed'}[s]||s}
+function statusClass(s){return s==='sold_subject_to_contract'?'status-sstc':''}
+function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;clearTimeout(t._timer);t._timer=setTimeout(()=>t.className='toast',3000)}
+
+async function fetchImageBase64(url){
+  if(url.startsWith('data:')){const[h,d]=url.split(',');const m=h.match(/data:(.*?);/);return{base64:d,mimeType:m?m[1]:'image/jpeg'}}
+  const r=await fetch(`${IMAGE_PROXY_URL}?url=${encodeURIComponent(url)}`);
+  if(!r.ok)throw new Error(`Proxy error ${r.status}`);
+  const j=await r.json();const b=j.base64||j.data;
+  if(!b)throw new Error('No base64 from proxy');
+  return{base64:b,mimeType:j.mimeType||'image/jpeg'};
+}
+
+async function callGemini(prompt,imageUrl){
+  const{base64,mimeType}=await fetchImageBase64(imageUrl);
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${STATE.apiKey}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[{inlineData:{mimeType,data:base64}},{text:prompt}]}],generationConfig:{responseModalities:['IMAGE','TEXT']}})
+  });
+  if(!r.ok){const e=await r.text();throw new Error(`Gemini ${r.status}: ${e.substring(0,200)}`)}
+  const d=await r.json();
+  for(const c of(d.candidates||[]))for(const p of(c.content?.parts||[]))if(p.inlineData)return`data:${p.inlineData.mimeType};base64,${p.inlineData.data}`;
+  const t=[];for(const c of(d.candidates||[]))for(const p of(c.content?.parts||[]))if(p.text)t.push(p.text);
+  if(t.length)throw new Error('Text returned: '+t.join(' ').substring(0,150));
+  throw new Error('No image returned');
+}
+
+async function init(){
+  const p=new URLSearchParams(window.location.search);
+  STATE.apiKey=p.get('apiKey')||p.get('api_key')||p.get('key');
+  try{
+    const r=await fetch(WEBHOOK_URL+(window.location.search||''));
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const d=await r.json();const l=Array.isArray(d)?d[0]:d;
+    if(!l)throw new Error('No listing data');
+    STATE.listing=l;STATE.images=(l.images||[]).sort((a,b)=>a.order-b.order);STATE.loading=false;
+  }catch(e){STATE.error=e.message;STATE.loading=false}
+  renderShell();
+}
+
+function renderShell(){
+  const app=document.getElementById('app');
+  if(STATE.loading){app.innerHTML='<div class="loading-screen"><div class="spinner"></div><div class="loading-text">Loading property…</div></div>';return}
+  if(STATE.error){app.innerHTML=`<div class="error-screen"><h2 style="font-family:var(--font-display);font-size:22px">Unable to load</h2><p style="color:var(--text-dim);max-width:400px;text-align:center">${STATE.error}</p></div>`;return}
+  const L=STATE.listing,imgs=STATE.images;
+  app.innerHTML=`
+    <header class="header">
+      <div class="header-left"><div class="property-badge">${L.displayAddress||L.address1}</div><span class="status-badge ${statusClass(L.status)}">${formatStatus(L.status)}</span></div>
+      <div class="header-right" id="headerRight"></div>
+    </header>
+    <div class="main">
+      <div class="left-col">
+        <div class="image-editor">
+          <div class="action-bar">
+            <div class="action-row"><span class="action-row-label">Remove</span>${ACTIONS_CLEANUP.map(a=>`<button class="action-btn" data-action="${a.id}"><span class="icon">${a.icon}</span>${a.label}</button>`).join('')}</div>
+            <div class="action-row"><span class="action-row-label">Enhance</span>${ACTIONS_ENHANCE.map(a=>`<button class="action-btn" data-action="${a.id}"><span class="icon">${a.icon}</span>${a.label}</button>`).join('')}</div>
+            <div class="action-row"><span class="action-row-label">Stage</span>${STAGING_STYLES.map(s=>`<button class="action-btn" data-stage="${s.id}"><span class="icon">${s.icon||'🎨'}</span>${s.label}</button>`).join('')}</div>
+          </div>
+          <div id="imageArea"></div>
+          <div class="custom-prompt-row"><input class="custom-prompt-input" id="customPrompt" placeholder="Type a custom edit instruction…"><button class="btn btn-primary btn-sm" id="customApplyBtn">Apply</button></div>
+          <div class="toggle-row"><span class="toggle-label">Show "Modified by AI" indicator</span><div class="toggle-switch ${STATE.aiWatermark?'active':''}" id="watermarkToggle"></div></div>
+        </div>
+      </div>
+      <div class="right-col"><div class="thumb-grid" id="thumbGrid">${imgs.map((img,i)=>`<div class="image-thumb" data-index="${i}"><img src="${img.thumbnailUrl}" alt="${img.name}" loading="lazy"></div>`).join('')}</div></div>
+    </div>
+    <div class="bottom-bar"><div class="edit-count" id="editCount"></div><div class="bottom-actions"><button class="btn btn-ghost" id="closeBtn">Close</button><button class="btn btn-success" id="saveBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg> Save & Close</button></div></div>`;
+  bindEvents();
+  updateView();
+}
+
+function updateView(){
+  const imgs=STATE.images,sel=imgs[STATE.selectedImageIndex];
+  const editedCount=Object.keys(STATE.editedImages).length;
+  const currentUrl=STATE.editedImages[sel?.id]?.url||sel?.url;
+  const isEdited=!!STATE.editedImages[sel?.id];
+
+  // Header nav
+  document.getElementById('headerRight').innerHTML=`
+    ${isEdited?`<button class="btn btn-danger btn-sm" id="revertBtn">Revert</button>`:''}
+    <div class="nav-arrows">
+      <button class="nav-arrow" id="prevBtn" ${STATE.selectedImageIndex===0?'disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button class="nav-arrow" id="nextBtn" ${STATE.selectedImageIndex===imgs.length-1?'disabled':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>`;
+  document.getElementById('prevBtn')?.addEventListener('click',()=>selectImage(STATE.selectedImageIndex-1));
+  document.getElementById('nextBtn')?.addEventListener('click',()=>selectImage(STATE.selectedImageIndex+1));
+  document.getElementById('revertBtn')?.addEventListener('click',()=>revertImage(sel.id));
+
+  // Image area
+  const ia=document.getElementById('imageArea');
+  if(STATE.processing){
+    ia.innerHTML=`<div class="image-preview-container"><div class="processing-overlay"><div class="spinner"></div><div class="processing-text">Applying edit with AI…</div><div class="progress-bar"><div class="progress-fill"></div></div></div><img src="${currentUrl}" alt="" style="filter:blur(3px);opacity:.35"></div>`;
+  }else if(isEdited){
+    ia.innerHTML=`<div class="comparison-container" id="cc"><div class="comparison-before"><img src="${sel.url}" alt="Before" draggable="false"></div><div class="comparison-after" id="ca"><img src="${currentUrl}" alt="After" draggable="false" id="cai"></div><div class="comparison-slider-line" id="cl"></div><div class="comparison-slider-handle" id="ch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 6l-4 6 4 6M16 6l4 6-4 6"/></svg></div><div class="comparison-label-before">Before</div><div class="comparison-label-after">After</div>${STATE.aiWatermark?'<div class="ai-watermark">✦ Modified by AI</div>':''}</div>`;
+    requestAnimationFrame(initSlider);
+  }else{
+    ia.innerHTML=`<div class="image-preview-container"><img src="${currentUrl}" alt="${sel?.name||''}"></div>`;
+  }
+
+  // Thumbs — update classes and src without re-creating
+  document.querySelectorAll('.image-thumb').forEach(el=>{
+    const i=parseInt(el.dataset.index),img=imgs[i];
+    el.classList.toggle('active',i===STATE.selectedImageIndex);
+    el.classList.toggle('edited',!!STATE.editedImages[img.id]);
+    const thumbImg=el.querySelector('img');
+    const edited=STATE.editedImages[img.id]?.url;
+    const target=edited||img.thumbnailUrl;
+    if(!thumbImg.src.endsWith(target)&&thumbImg.src!==target)thumbImg.src=target;
+  });
+
+  // Disable action buttons when processing
+  document.querySelectorAll('.action-btn').forEach(b=>b.disabled=STATE.processing);
+  const cab=document.getElementById('customApplyBtn');if(cab)cab.disabled=STATE.processing;
+
+  // Bottom bar
+  document.getElementById('editCount').innerHTML=editedCount>0?`<strong>${editedCount}</strong> image${editedCount!==1?'s':''} edited`:'No edits made';
+  document.getElementById('saveBtn').disabled=editedCount===0;
+}
+
+function bindEvents(){
+  document.querySelectorAll('.action-btn[data-action]').forEach(b=>b.addEventListener('click',()=>applyAction(b.dataset.action)));
+  document.querySelectorAll('.action-btn[data-stage]').forEach(b=>b.addEventListener('click',()=>applyStaging(b.dataset.stage)));
+  document.getElementById('customPrompt').addEventListener('keydown',e=>{if(e.key==='Enter')applyCustomEdit()});
+  document.getElementById('customApplyBtn').addEventListener('click',applyCustomEdit);
+  document.getElementById('watermarkToggle').addEventListener('click',()=>{STATE.aiWatermark=!STATE.aiWatermark;document.getElementById('watermarkToggle').classList.toggle('active',STATE.aiWatermark);updateView()});
+  document.querySelectorAll('.image-thumb').forEach(el=>el.addEventListener('click',()=>selectImage(parseInt(el.dataset.index))));
+  document.getElementById('saveBtn').addEventListener('click',saveEdits);
+  document.getElementById('closeBtn').addEventListener('click',closeWindow);
+}
+
+function initSlider(){
+  const c=document.getElementById('cc'),a=document.getElementById('ca'),ai=document.getElementById('cai'),l=document.getElementById('cl'),h=document.getElementById('ch');
+  if(!c||!a)return;
+  const size=()=>{ai.style.width=c.offsetWidth+'px'};size();
+  new ResizeObserver(size).observe(c);
+  let drag=false;
+  const set=x=>{const r=c.getBoundingClientRect();let p=((x-r.left)/r.width)*100;p=Math.max(1,Math.min(99,p));a.style.width=p+'%';l.style.left=p+'%';h.style.left=p+'%'};
+  c.addEventListener('mousedown',e=>{e.preventDefault();drag=true;set(e.clientX)});
+  c.addEventListener('touchstart',e=>{e.preventDefault();drag=true;set(e.touches[0].clientX)},{passive:false});
+  window.addEventListener('mousemove',e=>{if(drag)set(e.clientX)});
+  window.addEventListener('touchmove',e=>{if(drag)set(e.touches[0].clientX)},{passive:true});
+  window.addEventListener('mouseup',()=>{drag=false});
+  window.addEventListener('touchend',()=>{drag=false});
+}
+
+function selectImage(i){if(i<0||i>=STATE.images.length||i===STATE.selectedImageIndex)return;STATE.selectedImageIndex=i;updateView()}
+
+async function applyAction(id){
+  const all=[...ACTIONS_CLEANUP,...ACTIONS_ENHANCE],a=all.find(x=>x.id===id);
+  if(!a||STATE.processing)return;
+  if(!STATE.apiKey){showToast('No API key.','error');return}
+  const img=STATE.images[STATE.selectedImageIndex],src=STATE.editedImages[img.id]?.url||img.url;
+  STATE.processing=true;updateView();
+  try{const r=await callGemini(a.prompt,src);STATE.editedImages[img.id]=STATE.editedImages[img.id]||{url:null,edits:[]};STATE.editedImages[img.id].url=r;STATE.editedImages[img.id].edits.push(a.label);showToast(`${a.label} applied`,'success')}catch(e){console.error(e);showToast(`Error: ${e.message}`,'error')}
+  STATE.processing=false;updateView();
+}
+
+async function applyStaging(id){
+  const s=STAGING_STYLES.find(x=>x.id===id);
+  if(!s||STATE.processing)return;
+  if(!STATE.apiKey){showToast('No API key.','error');return}
+  const img=STATE.images[STATE.selectedImageIndex],src=STATE.editedImages[img.id]?.url||img.url;
+  STATE.processing=true;updateView();
+  try{const r=await callGemini(s.prompt,src);STATE.editedImages[img.id]=STATE.editedImages[img.id]||{url:null,edits:[]};STATE.editedImages[img.id].url=r;STATE.editedImages[img.id].edits.push('Restage: '+s.label);showToast(`Restaged as "${s.label}"`,'success')}catch(e){console.error(e);showToast(`Error: ${e.message}`,'error')}
+  STATE.processing=false;updateView();
+}
+
+async function applyCustomEdit(){
+  const input=document.getElementById('customPrompt'),prompt=input?.value?.trim();
+  if(!prompt||STATE.processing)return;
+  if(!STATE.apiKey){showToast('No API key.','error');return}
+  const img=STATE.images[STATE.selectedImageIndex],src=STATE.editedImages[img.id]?.url||img.url;
+  STATE.processing=true;updateView();
+  try{const r=await callGemini(prompt,src);STATE.editedImages[img.id]=STATE.editedImages[img.id]||{url:null,edits:[]};STATE.editedImages[img.id].url=r;STATE.editedImages[img.id].edits.push('Custom: '+prompt.substring(0,50));showToast('Edit applied','success');input.value=''}catch(e){console.error(e);showToast(`Error: ${e.message}`,'error')}
+  STATE.processing=false;updateView();
+}
+
+function revertImage(id){delete STATE.editedImages[id];showToast('Reverted','success');updateView()}
+
+async function burnWatermark(dataUrl){
+  return new Promise(resolve=>{
+    const img=new Image();img.onload=()=>{
+      const c=document.createElement('canvas');c.width=img.width;c.height=img.height;
+      const x=c.getContext('2d');x.drawImage(img,0,0);
+      const txt='Modified by AI',fs=Math.max(12,Math.round(img.width*.014));
+      x.font=`600 ${fs}px sans-serif`;const m=x.measureText(txt);
+      const px=fs*.8,py=fs*.5,bw=m.width+px*2+fs*1.2,bh=fs+py*2;
+      const bx=img.width-bw-fs,by=img.height-bh-fs;
+      x.fillStyle='rgba(0,0,0,.65)';x.beginPath();x.roundRect(bx,by,bw,bh,fs*.4);x.fill();
+      x.fillStyle='rgba(255,255,255,.8)';x.font=`${fs}px sans-serif`;x.fillText('✦',bx+px*.5,by+bh-py*.8);
+      x.fillStyle='rgba(255,255,255,.85)';x.font=`600 ${fs}px sans-serif`;x.fillText(txt,bx+px*.5+fs*1.1,by+bh-py*.8);
+      resolve(c.toDataURL('image/jpeg',.92));
+    };img.src=dataUrl;
+  });
+}
+
+async function saveEdits(){
+  if(!Object.keys(STATE.editedImages).length)return;
+  const ov=document.createElement('div');ov.className='saving-overlay';
+  ov.innerHTML='<div class="spinner"></div><h2>Saving…</h2><p class="loading-text">Uploading images</p>';
+  document.body.appendChild(ov);
+  const processed=[];
+  for(const[id,data]of Object.entries(STATE.editedImages)){
+    let url=data.url;
+    if(STATE.aiWatermark){try{url=await burnWatermark(data.url)}catch(e){}}
+    const orig=STATE.images.find(x=>String(x.id)===String(id));
+    const fn=(orig?.url||'').split('/').pop().split('?')[0]||(orig?.name||'image')+'.jpg';
+    processed.push({imageId:parseInt(id),imageName:orig?.name||'',fileName:fn,editedDataUrl:url.replace(/^data:[^;]+;base64,/,''),mimeType:'image/jpeg',editsApplied:data.edits,aiWatermark:STATE.aiWatermark});
+  }
+  const qp=Object.fromEntries(new URLSearchParams(window.location.search));
+  const payload={...qp,listingId:STATE.listing.id,reference:STATE.listing.fullReference,editedImages:processed};
+  try{await fetch(SAVE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})}catch(e){}
+  showToast('Saved!','success');
+  setTimeout(()=>{window.close();setTimeout(()=>{document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:14px;font-family:DM Sans,sans-serif;background:#0e0f11;color:#e8e9ec"><div style="font-size:36px">✅</div><h2 style="font-family:Fraunces,serif;font-size:20px">Edits Saved</h2><p style="color:#8b8f98;font-size:13px">You can close this tab.</p></div>'},500)},800);
+}
+
+function closeWindow(){
+  if(Object.keys(STATE.editedImages).length>0&&!confirm('Unsaved edits. Close anyway?'))return;
+  window.close();document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b8f98;font-family:DM Sans,sans-serif;background:#0e0f11">You can close this tab.</div>';
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex27 Email Signature Builder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242836;
+      --border: #2e3345;
+      --text: #e4e7f1;
+      --text-dim: #8b90a5;
+      --accent: #6c5ce7;
+      --accent2: #a29bfe;
+      --accent-glow: rgba(108, 92, 231, 0.25);
+      --success: #00b894;
+      --warn: #fdcb6e;
+      --danger: #e17055;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Loading overlay */
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #loading-overlay p {
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, rgba(108, 92, 231, 0.15), rgba(162, 155, 254, 0.08));
+      border-bottom: 1px solid var(--border);
+      padding: 12px 32px;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    header h1 span {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .user-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px 4px 6px;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .user-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 10px;
+      color: #fff;
+    }
+
+    /* Layout */
+    .app {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      overflow: hidden;
+      padding: 0;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .sidebar-panel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 12px;
+      overflow-y: auto;
+      transition: transform .3s ease, opacity .3s ease;
+    }
+
+    .sidebar-panel.hidden-left {
+      transform: translateX(-100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sidebar-panel.hidden-right {
+      transform: translateX(100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* Template & style cards */
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+
+    .template-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .template-card {
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .template-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .template-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .template-card .tc-name {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 1px;
+    }
+
+    .template-card .tc-desc {
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    .template-card .tc-arrow {
+      float: right;
+      color: var(--text-dim);
+      font-size: 14px;
+      transition: transform .2s;
+    }
+
+    .template-card:hover .tc-arrow {
+      transform: translateX(3px);
+      color: var(--accent);
+    }
+
+    .section-hint {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin: -6px 0 10px 0;
+      opacity: 0.7;
+    }
+
+    .back-card {
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    .back-card:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .back-card .back-arrow {
+      font-size: 14px;
+    }
+
+    .style-card {
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .style-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .style-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .style-card .sc-name {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .style-card .sc-desc {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+
+    .style-card .sc-swatches {
+      display: flex;
+      gap: 4px;
+    }
+
+    .style-card .sc-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, .15);
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .toolbar button,
+    .toolbar label {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 5px 9px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: inherit;
+    }
+
+    .toolbar button:hover,
+    .toolbar label:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .toolbar .sep {
+      width: 1px;
+      height: 22px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+
+    .toolbar select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 12px;
+      font-family: inherit;
+    }
+
+    .toolbar input[type="color"] {
+      width: 26px;
+      height: 26px;
+      border: none;
+      cursor: pointer;
+      background: none;
+    }
+
+    .toolbar input[type="file"] {
+      display: none;
+    }
+
+    /* Editor */
+    .editor-wrap {
+      flex: 1;
+      overflow: auto;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 0;
+    }
+
+    .editor-container {
+      background: #ffffff;
+      color: #333;
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 700px;
+      min-height: 150px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, .4);
+    }
+
+    .editor-container:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Bottom bar */
+    .bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 10px 24px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .btn {
+      padding: 8px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--success);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 500;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all .3s;
+      z-index: 999;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .3);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Error state */
+    .error-msg {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--danger);
+    }
+
+    .error-msg h2 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .error-msg p {
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-dim);
+    }
+
+    @media (max-width: 768px) {
+      .app {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        min-width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        max-height: 200px;
+      }
+
+      .template-grid {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+
+      .template-card {
+        flex: 1;
+        min-width: 140px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>Loading your profile...</p>
+  </div>
+
+  <header>
+    <h1>✉️ <span>Apex27 Email Signature Builder</span></h1>
+    <div id="user-info"></div>
+  </header>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-panel" id="panel-templates">
+        <div class="section-label">Choose a Template</div>
+        <div class="section-hint">Click a template to customise its style →</div>
+        <div class="template-grid" id="template-grid"></div>
+      </div>
+      <div class="sidebar-panel hidden-right" id="panel-styles">
+        <div class="back-card" onclick="showTemplates()">
+          <span class="back-arrow">←</span> Back to Templates
+        </div>
+        <div class="section-label">Choose a Style</div>
+        <div class="template-grid" id="style-grid"></div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <div class="toolbar">
+        <button onclick="execCmd('bold')" title="Bold"><b>B</b></button>
+        <button onclick="execCmd('italic')" title="Italic"><i>I</i></button>
+        <button onclick="execCmd('underline')" title="Underline"><u>U</u></button>
+        <div class="sep"></div>
+        <select onchange="execCmd('fontSize',this.value);this.selectedIndex=0" title="Font Size">
+          <option value="">Size</option>
+          <option value="1">Small</option>
+          <option value="3">Normal</option>
+          <option value="4">Medium</option>
+          <option value="5">Large</option>
+        </select>
+        <select onchange="execCmd('fontName',this.value);this.selectedIndex=0" title="Font">
+          <option value="">Font</option>
+          <option value="Arial, sans-serif">Arial</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="Verdana, sans-serif">Verdana</option>
+          <option value="Tahoma, sans-serif">Tahoma</option>
+          <option value="Trebuchet MS, sans-serif">Trebuchet MS</option>
+          <option value="Courier New, monospace">Courier New</option>
+        </select>
+        <input type="color" value="#333333" onchange="execCmd('foreColor',this.value)" title="Text Color">
+        <div class="sep"></div>
+        <button onclick="insertLink()" title="Insert Link">🔗 Link</button>
+        <label title="Upload Image" style="cursor:pointer">
+          📷 Image
+          <input type="file" id="img-upload" accept="image/*" onchange="handleImageUpload(event)">
+        </label>
+        <div class="sep"></div>
+        <button onclick="execCmd('removeFormat')" title="Clear Formatting">🧹 Clear</button>
+      </div>
+
+      <div class="editor-wrap">
+        <div class="editor-container" id="editor" contenteditable="true">
+          <p style="color:#999; font-style:italic;">Select a template from the sidebar to get started, or start typing
+            your signature here...</p>
+        </div>
+      </div>
+
+      <div class="bottom-bar">
+        <button class="btn btn-secondary" onclick="resetEditor()">↺ Reset</button>
+        <button class="btn btn-primary" onclick="copyHTML()">📋 Copy Signature HTML</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ── State ──
+    let userData = null;
+    let currentTemplate = -1;
+    let currentStyle = 0;
+
+    // ── Style Definitions ──
+    const styles = [
+      { name: 'Classic Professional', desc: 'Traditional navy and gray', font: 'Arial,sans-serif', primary: '#2c3e50', secondary: '#7f8c8d', text: '#333333', link: '#2c3e50', phoneIcon: '📞', mobileIcon: '📱', emailIcon: '✉️' },
+      { name: 'Ocean Blue', desc: 'Cool blue tones', font: 'Verdana,sans-serif', primary: '#0984e3', secondary: '#74b9ff', text: '#2d3436', link: '#0984e3', phoneIcon: '☎️', mobileIcon: '📲', emailIcon: '✉️' },
+      { name: 'Forest Green', desc: 'Natural earthy greens', font: 'Georgia,serif', primary: '#00b894', secondary: '#55efc4', text: '#2d3436', link: '#00b894', phoneIcon: '☎️', mobileIcon: '📱', emailIcon: '📧' },
+      { name: 'Sunset Warm', desc: 'Warm coral and amber', font: 'Trebuchet MS,sans-serif', primary: '#e17055', secondary: '#fab1a0', text: '#2d3436', link: '#e17055', phoneIcon: '☎', mobileIcon: '📱', emailIcon: '✉' },
+      { name: 'Royal Purple', desc: 'Rich purple accents', font: 'Tahoma,sans-serif', primary: '#6c5ce7', secondary: '#a29bfe', text: '#2d3436', link: '#6c5ce7', phoneIcon: '☎️', mobileIcon: '📱', emailIcon: '💌' },
+      { name: 'Rose Gold', desc: 'Elegant pink tones', font: 'Georgia,serif', primary: '#e84393', secondary: '#fd79a8', text: '#2d3436', link: '#e84393', phoneIcon: '☏', mobileIcon: '📱', emailIcon: '💌' },
+      { name: 'Midnight Neon', desc: 'Dark bg with cyan pop', font: 'Arial,sans-serif', primary: '#00cec9', secondary: '#81ecec', text: '#dfe6e9', link: '#00cec9', phoneIcon: '☎', mobileIcon: '📱', emailIcon: '✉️', darkBg: '#1a1a2e' },
+      { name: 'Corporate Red', desc: 'Bold red accents', font: 'Arial,sans-serif', primary: '#d63031', secondary: '#ff7675', text: '#2d3436', link: '#d63031', phoneIcon: '☎️', mobileIcon: '📱', emailIcon: '✉️' },
+      { name: 'Elegant Gold', desc: 'Warm gold and brown', font: 'Georgia,serif', primary: '#b8860b', secondary: '#d4a843', text: '#3d3d3d', link: '#b8860b', phoneIcon: '☎️', mobileIcon: '📱', emailIcon: '✉️' },
+      { name: 'Monochrome', desc: 'Clean text labels, no emojis', font: 'Courier New,monospace', primary: '#333333', secondary: '#666666', text: '#333333', link: '#333333', phoneIcon: 'T:', mobileIcon: 'M:', emailIcon: 'E:' },
+    ];
+
+    // ── Panel Switching ──
+    function showStyles() {
+      document.getElementById('panel-templates').classList.add('hidden-left');
+      document.getElementById('panel-styles').classList.remove('hidden-right');
+    }
+
+    function showTemplates() {
+      document.getElementById('panel-styles').classList.add('hidden-right');
+      document.getElementById('panel-templates').classList.remove('hidden-left');
+    }
+
+    function applyStyle(index) {
+      currentStyle = index;
+      if (currentTemplate >= 0) {
+        const templates = getTemplates(userData, styles[currentStyle]);
+        document.getElementById('editor').innerHTML = templates[currentTemplate].html;
+      }
+      document.querySelectorAll('.style-card').forEach((c, i) => {
+        c.classList.toggle('active', i === index);
+      });
+    }
+
+    function buildStyleGrid() {
+      const grid = document.getElementById('style-grid');
+      grid.innerHTML = styles.map((s, i) => `
+    <div class="style-card${i === currentStyle ? ' active' : ''}" onclick="applyStyle(${i})">
+      <div class="sc-name">${s.name}</div>
+      <div class="sc-desc">${s.desc}</div>
+      <div class="sc-swatches">
+        <div class="sc-swatch" style="background:${s.primary}"></div>
+        <div class="sc-swatch" style="background:${s.secondary}"></div>
+        <div class="sc-swatch" style="background:${s.text}"></div>
+      </div>
+    </div>
+  `).join('');
+    }
+
+    // ── Helpers ──
+    function showToast(msg, duration = 2500) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), duration);
+    }
+
+    function execCmd(cmd, val = null) {
+      document.execCommand(cmd, false, val);
+      document.getElementById('editor').focus();
+    }
+
+    function insertLink() {
+      const url = prompt('Enter URL:', 'https://');
+      if (url) execCmd('createLink', url);
+    }
+
+    function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        const base64 = ev.target.result;
+        const editor = document.getElementById('editor');
+        editor.focus();
+        document.execCommand('insertHTML', false,
+          `<img src="${base64}" style="max-width:200px;height:auto;display:block;margin:8px 0;" alt="Uploaded image">`
+        );
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    }
+
+    function resetEditor() {
+      if (currentTemplate >= 0) {
+        loadTemplate(currentTemplate);
+      } else {
+        document.getElementById('editor').innerHTML = '<p style="color:#999;font-style:italic;">Select a template from the sidebar...</p>';
+      }
+    }
+
+    function copyHTML() {
+      const editor = document.getElementById('editor');
+      const html = editor.innerHTML;
+      // Copy as both HTML and plain text
+      if (navigator.clipboard && navigator.clipboard.write) {
+        const blob = new Blob([html], { type: 'text/html' });
+        const textBlob = new Blob([html], { type: 'text/plain' });
+        navigator.clipboard.write([
+          new ClipboardItem({ 'text/html': blob, 'text/plain': textBlob })
+        ]).then(() => showToast('✅ Signature HTML copied to clipboard!'));
+      } else {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = html;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('✅ Signature HTML copied to clipboard!');
+      }
+    }
+
+    // ── Template Definitions ──
+    function getTemplates(u, s) {
+      const name = `${u.firstName} ${u.lastName}`;
+      const quals = u.qualifications ? `, ${u.qualifications}` : '';
+      const title = u.jobTitle || '';
+      const email = u.email || '';
+      const phone = u.phone || '';
+      const mobile = u.mobile || '';
+      const initials = u.initials || '';
+      const f = s.font;
+      const p = s.primary;
+      const sc = s.secondary;
+      const tc = s.text;
+      const lk = s.link;
+      const pi = s.phoneIcon;
+      const mi = s.mobileIcon;
+      const ei = s.emailIcon;
+      const darkBg = s.darkBg || '';
+
+      return [
+        // 0 ─ Corporate Classic
+        {
+          name: 'Corporate Classic',
+          desc: 'Traditional professional layout',
+          html: `<table cellpadding="0" cellspacing="0" border="0" style="font-family:${f};color:${tc};border-collapse:collapse;">
+<tr><td style="padding:0;margin:0;font-size:18px;font-weight:bold;color:${p};line-height:22px;mso-line-height-rule:exactly;">${name}${quals}</td></tr>
+<tr><td style="padding:0;margin:0;font-size:14px;color:${sc};line-height:18px;mso-line-height-rule:exactly;">${title}</td></tr>
+<tr><td style="padding:4px 0 4px 0;margin:0;font-size:1px;line-height:1px;mso-line-height-rule:exactly;"><table cellpadding="0" cellspacing="0" border="0" width="200" style="border-collapse:collapse;"><tr><td style="border-top:3px solid ${p};font-size:1px;line-height:1px;mso-line-height-rule:exactly;">&nbsp;</td></tr></table></td></tr>
+${phone ? `<tr><td style="padding:0;margin:0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;">${pi} ${phone}</td></tr>` : ''}
+${mobile ? `<tr><td style="padding:0;margin:0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;">${mi} ${mobile}</td></tr>` : ''}
+${email ? `<tr><td style="padding:0;margin:0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;">${ei} <a href="mailto:${email}" style="color:${lk};text-decoration:none;">${email}</a></td></tr>` : ''}
+</table>`
+        },
+        // 1 ─ Modern Minimal
+        {
+          name: 'Modern Minimal',
+          desc: 'Clean and understated',
+          html: `<table cellpadding="0" cellspacing="0" border="0" style="font-family:${f};font-size:13px;color:${tc};border-collapse:collapse;">
+<tr>
+<td style="vertical-align:top;padding:0 16px 0 0;border-right:2px solid #e0e0e0;font-size:0;line-height:0;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+<tr><td style="padding:0;margin:0;font-size:16px;font-weight:bold;color:${p};line-height:20px;mso-line-height-rule:exactly;">${name}${quals}</td></tr>
+<tr><td style="padding:0;margin:0;font-size:13px;color:${sc};line-height:18px;mso-line-height-rule:exactly;">${title}</td></tr>
+</table>
+</td>
+<td style="vertical-align:top;padding:0 0 0 16px;font-size:0;line-height:0;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+${email ? `<tr><td style="padding:0;margin:0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;"><a href="mailto:${email}" style="color:${lk};text-decoration:none;">${email}</a></td></tr>` : ''}
+${phone ? `<tr><td style="padding:0;margin:0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;">${phone}</td></tr>` : ''}
+${mobile ? `<tr><td style="padding:0;margin:0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;">${mobile}</td></tr>` : ''}
+</table>
+</td>
+</tr>
+</table>`
+        },
+        // 2 ─ Bold Banner
+        {
+          name: 'Bold Banner',
+          desc: 'Eye-catching colored banner',
+          html: `<table cellpadding="0" cellspacing="0" border="0" style="font-family:${f};font-size:13px;border-collapse:collapse;">
+<tr><td style="background:${p};color:#ffffff;padding:12px 20px;font-size:0;line-height:0;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+<tr><td style="padding:0;margin:0;font-size:20px;font-weight:bold;color:#ffffff;line-height:24px;mso-line-height-rule:exactly;">${name}${quals}</td></tr>
+<tr><td style="padding:0;margin:0;font-size:14px;color:${sc};line-height:18px;mso-line-height-rule:exactly;">${title}</td></tr>
+</table>
+</td></tr>
+<tr><td style="background:#f8f9fa;padding:10px 20px;border:1px solid #e9ecef;border-top:none;color:${tc};font-size:0;line-height:0;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+${phone ? `<tr><td style="padding:0;margin:0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;">${pi} ${phone}</td></tr>` : ''}
+${mobile ? `<tr><td style="padding:0;margin:0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;">${mi} ${mobile}</td></tr>` : ''}
+${email ? `<tr><td style="padding:0;margin:0;font-size:13px;line-height:18px;mso-line-height-rule:exactly;">${ei} <a href="mailto:${email}" style="color:${lk};text-decoration:none;">${email}</a></td></tr>` : ''}
+</table>
+</td></tr>
+</table>`
+        },
+        // 3 ─ Gradient Accent
+        {
+          name: 'Gradient Accent',
+          desc: 'Modern gradient left border',
+          html: `<table cellpadding="0" cellspacing="0" border="0" style="font-family:${f};font-size:13px;color:${tc};border-collapse:collapse;">
+<tr><td style="border-left:4px solid ${p};padding:0 0 0 12px;font-size:0;line-height:0;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+<tr><td style="padding:0;margin:0;font-size:17px;font-weight:bold;color:${p};line-height:21px;mso-line-height-rule:exactly;">${name}${quals}</td></tr>
+<tr><td style="padding:0;margin:0;font-size:13px;color:${sc};font-weight:600;line-height:18px;mso-line-height-rule:exactly;">${title}</td></tr>
+<tr><td style="padding:4px 0 0 0;margin:0;font-size:1px;line-height:1px;mso-line-height-rule:exactly;">&nbsp;</td></tr>
+${phone ? `<tr><td style="padding:0;margin:0;font-size:12px;color:${tc};line-height:17px;mso-line-height-rule:exactly;"><span style="color:#b2bec3;">Phone</span> ${phone}</td></tr>` : ''}
+${mobile ? `<tr><td style="padding:0;margin:0;font-size:12px;color:${tc};line-height:17px;mso-line-height-rule:exactly;"><span style="color:#b2bec3;">Mobile</span> ${mobile}</td></tr>` : ''}
+${email ? `<tr><td style="padding:0;margin:0;font-size:12px;color:${tc};line-height:17px;mso-line-height-rule:exactly;"><span style="color:#b2bec3;">Email</span> <a href="mailto:${email}" style="color:${lk};text-decoration:none;">${email}</a></td></tr>` : ''}
+</table>
+</td></tr>
+</table>`
+        },
+        // 4 ─ Dark Professional
+        {
+          name: 'Dark Professional',
+          desc: 'Dark background, striking contrast',
+          html: `<table cellpadding="0" cellspacing="0" border="0" style="font-family:${f};font-size:13px;background:${darkBg || '#1a1a2e'};color:#eaeaea;border-collapse:collapse;">
+<tr><td style="padding:14px 20px;font-size:0;line-height:0;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+<tr><td style="padding:0;margin:0;font-size:18px;font-weight:bold;color:#ffffff;line-height:22px;mso-line-height-rule:exactly;">${name}${quals}</td></tr>
+<tr><td style="padding:0;margin:0;color:${sc};font-size:14px;line-height:18px;mso-line-height-rule:exactly;">${title}</td></tr>
+<tr><td style="padding:4px 0 0 0;margin:0;font-size:1px;line-height:1px;mso-line-height-rule:exactly;">&nbsp;</td></tr>
+${phone ? `<tr><td style="padding:0;margin:0;font-size:12px;color:#ccc;line-height:17px;mso-line-height-rule:exactly;">${pi} ${phone}</td></tr>` : ''}
+${mobile ? `<tr><td style="padding:0;margin:0;font-size:12px;color:#ccc;line-height:17px;mso-line-height-rule:exactly;">${mi} ${mobile}</td></tr>` : ''}
+${email ? `<tr><td style="padding:0;margin:0;font-size:12px;color:#ccc;line-height:17px;mso-line-height-rule:exactly;">${ei} <a href="mailto:${email}" style="color:${sc};text-decoration:none;">${email}</a></td></tr>` : ''}
+</table>
+</td></tr>
+</table>`
+        },
+        // 5 ─ Clean Sidebar
+        {
+          name: 'Clean Sidebar',
+          desc: 'Initials badge with clean layout',
+          html: `<table cellpadding="0" cellspacing="0" border="0" style="font-family:${f};font-size:13px;color:${tc};border-collapse:collapse;">
+<tr>
+<td style="vertical-align:top;padding:0 12px 0 0;font-size:0;line-height:0;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr><td style="background:${p};color:#fff;font-size:18px;font-weight:700;width:50px;height:50px;text-align:center;vertical-align:middle;">${initials}</td></tr></table>
+</td>
+<td style="vertical-align:top;font-size:0;line-height:0;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+<tr><td style="padding:0;margin:0;font-size:16px;font-weight:bold;color:${p};line-height:20px;mso-line-height-rule:exactly;">${name}${quals}</td></tr>
+<tr><td style="padding:0;margin:0;font-size:13px;color:${sc};line-height:18px;mso-line-height-rule:exactly;">${title}</td></tr>
+<tr><td style="padding:3px 0 0 0;margin:0;font-size:1px;line-height:1px;mso-line-height-rule:exactly;">&nbsp;</td></tr>
+${phone ? `<tr><td style="padding:0;margin:0;font-size:12px;color:${tc};line-height:17px;mso-line-height-rule:exactly;">${phone}</td></tr>` : ''}
+${mobile ? `<tr><td style="padding:0;margin:0;font-size:12px;color:${tc};line-height:17px;mso-line-height-rule:exactly;">${mobile}</td></tr>` : ''}
+${email ? `<tr><td style="padding:0;margin:0;font-size:12px;color:${tc};line-height:17px;mso-line-height-rule:exactly;"><a href="mailto:${email}" style="color:${lk};text-decoration:none;">${email}</a></td></tr>` : ''}
+</table>
+</td>
+</tr>
+</table>`
+        },
+        // 6 ─ Rounded Modern
+        {
+          name: 'Rounded Modern',
+          desc: 'Soft rounded card with accent',
+          html: `<table cellpadding="0" cellspacing="0" border="0" style="font-family:${f};font-size:13px;border:1px solid #e0e0e0;border-collapse:collapse;">
+<tr><td style="padding:14px 20px;background:#fafbfc;font-size:0;line-height:0;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+<tr><td style="padding:0;margin:0;font-size:17px;font-weight:bold;color:${p};line-height:21px;mso-line-height-rule:exactly;">${name}${quals}</td></tr>
+<tr><td style="padding:0;margin:0;color:${sc};font-size:13px;line-height:18px;mso-line-height-rule:exactly;">${title}</td></tr>
+<tr><td style="padding:5px 0;margin:0;font-size:1px;line-height:1px;mso-line-height-rule:exactly;"><table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;"><tr><td style="border-top:1px solid #eee;font-size:1px;line-height:1px;mso-line-height-rule:exactly;">&nbsp;</td></tr></table></td></tr>
+${phone ? `<tr><td style="padding:0;margin:0;font-size:12px;color:${tc};line-height:17px;mso-line-height-rule:exactly;"><span style="font-weight:600;color:${p};">T</span>&nbsp; ${phone}</td></tr>` : ''}
+${mobile ? `<tr><td style="padding:0;margin:0;font-size:12px;color:${tc};line-height:17px;mso-line-height-rule:exactly;"><span style="font-weight:600;color:${p};">M</span>&nbsp; ${mobile}</td></tr>` : ''}
+${email ? `<tr><td style="padding:0;margin:0;font-size:12px;color:${tc};line-height:17px;mso-line-height-rule:exactly;"><span style="font-weight:600;color:${p};">E</span>&nbsp; <a href="mailto:${email}" style="color:${lk};text-decoration:none;">${email}</a></td></tr>` : ''}
+</table>
+</td></tr>
+</table>`
+        },
+        // 7 ─ Two Column
+        {
+          name: 'Two Column',
+          desc: 'Split layout with accent divider',
+          html: `<table cellpadding="0" cellspacing="0" border="0" style="font-family:${f};font-size:13px;color:${tc};border-collapse:collapse;">
+<tr>
+<td style="vertical-align:top;padding:0 16px 0 0;border-right:3px solid ${p};font-size:0;line-height:0;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+<tr><td style="padding:0;margin:0;font-size:18px;font-weight:bold;color:${p};line-height:22px;mso-line-height-rule:exactly;">${name}</td></tr>
+${quals ? `<tr><td style="padding:0;margin:0;font-size:11px;color:${sc};line-height:15px;mso-line-height-rule:exactly;">${u.qualifications}</td></tr>` : ''}
+<tr><td style="padding:0;margin:0;color:${sc};font-weight:600;font-size:13px;line-height:18px;mso-line-height-rule:exactly;">${title}</td></tr>
+</table>
+</td>
+<td style="vertical-align:top;padding:0 0 0 16px;font-size:0;line-height:0;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-size:12px;color:${tc};">
+${phone ? `<tr><td style="padding:0;margin:0;font-size:12px;line-height:17px;mso-line-height-rule:exactly;">${pi} ${phone}</td></tr>` : ''}
+${mobile ? `<tr><td style="padding:0;margin:0;font-size:12px;line-height:17px;mso-line-height-rule:exactly;">${mi} ${mobile}</td></tr>` : ''}
+${email ? `<tr><td style="padding:0;margin:0;font-size:12px;line-height:17px;mso-line-height-rule:exactly;"><a href="mailto:${email}" style="color:${lk};text-decoration:none;">${email}</a></td></tr>` : ''}
+</table>
+</td>
+</tr>
+</table>`
+        },
+        // 8 ─ Compact Inline
+        {
+          name: 'Compact Inline',
+          desc: 'Single-line compact format',
+          html: `<table cellpadding="0" cellspacing="0" border="0" style="font-family:${f};font-size:13px;color:${tc};">
+<tr><td style="padding:0;margin:0;line-height:18px;mso-line-height-rule:exactly;">
+<span style="font-weight:bold;color:${p};">${name}${quals}</span>
+<span style="color:#ccc;">&nbsp;|&nbsp;</span>
+<span style="color:${sc};">${title}</span>
+</td></tr>
+<tr><td style="padding:2px 0 0 0;margin:0;font-size:12px;color:${sc};line-height:17px;mso-line-height-rule:exactly;">
+${[phone, mobile, email ? `<a href="mailto:${email}" style="color:${lk};text-decoration:none;">${email}</a>` : ''].filter(Boolean).join(' &nbsp;•&nbsp; ')}
+</td></tr>
+</table>`
+        },
+        // 9 ─ Executive
+        {
+          name: 'Executive',
+          desc: 'Premium executive style layout',
+          html: `<table cellpadding="0" cellspacing="0" border="0" style="font-family:${f};font-size:14px;color:${tc};">
+<tr><td style="padding:0;margin:0;line-height:26px;mso-line-height-rule:exactly;">
+<span style="font-size:22px;font-weight:700;color:${p};letter-spacing:0.5px;">${name}</span>
+${quals ? `<span style="font-size:12px;color:${sc};font-style:italic;">&nbsp;${u.qualifications}</span>` : ''}
+</td></tr>
+<tr><td style="padding:0 0 4px 0;margin:0;line-height:18px;mso-line-height-rule:exactly;">
+<span style="font-size:14px;color:${sc};text-transform:uppercase;letter-spacing:2px;">${title}</span>
+</td></tr>
+<tr><td style="padding:4px 0 0 0;margin:0;border-top:2px solid ${p};font-size:12px;color:${sc};line-height:17px;mso-line-height-rule:exactly;">
+${phone ? `T: ${phone}&nbsp;&nbsp;&nbsp;` : ''}${mobile ? `M: ${mobile}&nbsp;&nbsp;&nbsp;` : ''}${email ? `E: <a href="mailto:${email}" style="color:${lk};text-decoration:none;">${email}</a>` : ''}
+</td></tr>
+</table>`
+        },
+      ];
+    }
+
+    // ── Template Loading ──
+    function loadTemplate(index) {
+      currentTemplate = index;
+      const templates = getTemplates(userData, styles[currentStyle]);
+      document.getElementById('editor').innerHTML = templates[index].html;
+
+      // Update active state
+      document.querySelectorAll('.template-card').forEach((c, i) => {
+        c.classList.toggle('active', i === index);
+      });
+
+      // Slide to styles panel
+      showStyles();
+    }
+
+    // ── Build Template Grid ──
+    function buildTemplateGrid() {
+      const grid = document.getElementById('template-grid');
+      const templates = getTemplates(userData, styles[currentStyle]);
+      grid.innerHTML = templates.map((t, i) => `
+    <div class="template-card" onclick="loadTemplate(${i})">
+      <span class="tc-arrow">›</span>
+      <div class="tc-name">${t.name}</div>
+      <div class="tc-desc">${t.desc}</div>
+    </div>
+  `).join('');
+    }
+
+    // ── Build User Info ──
+    function buildUserInfo() {
+      const u = userData;
+      document.getElementById('user-info').innerHTML = `
+    <div class="user-pill">
+      <div class="user-avatar">${u.initials || '?'}</div>
+      <span><strong>${u.firstName} ${u.lastName}</strong> &middot; ${u.jobTitle || ''}</span>
+    </div>
+  `;
+    }
+
+    // ── Init ──
+    async function init() {
+      const overlay = document.getElementById('loading-overlay');
+      try {
+        // Pass through all query params
+        const params = window.location.search;
+        const apiUrl = `https://n8n.apex27.co.uk/webhook/31678854-0418-4de3-882d-10beffb891e2${params}`;
+        const res = await fetch(apiUrl);
+        if (!res.ok) throw new Error(`API returned ${res.status}`);
+        const data = await res.json();
+
+        // API returns array, use first item
+        userData = Array.isArray(data) ? data[0] : data;
+        if (!userData || !userData.firstName) throw new Error('Invalid user data received');
+
+        buildUserInfo();
+        buildTemplateGrid();
+        buildStyleGrid();
+        overlay.style.display = 'none';
+      } catch (err) {
+        overlay.innerHTML = `
+      <div class="error-msg">
+        <h2>⚠️ Unable to load user data</h2>
+        <p>${err.message}</p>
+        <p style="margin-top:16px;font-size:12px;color:#666;">Make sure you opened this page with the correct query parameters.</p>
+      </div>
+    `;
+      }
+    }
+
+    init();
+  </script>
+</body>
+
+</html>

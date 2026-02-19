@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Valuation Request | Apex27</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a365d;
+            --primary-light: #2c5282;
+            --primary-dark: #0f2440;
+            --accent: #c9a227;
+            --accent-light: #d4b54a;
+            --surface: #ffffff;
+            --surface-elevated: #f8fafc;
+            --border: #e2e8f0;
+            --border-focus: #3182ce;
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --success: #38a169;
+            --success-bg: #f0fff4;
+            --error: #e53e3e;
+            --error-bg: #fed7d7;
+            --radius: 8px;
+            --radius-lg: 12px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            --transition: all 0.2s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        body.embedded { background: transparent; padding: 0; }
+
+        .container { max-width: 720px; margin: 0 auto; padding: 40px 24px; }
+        body.embedded .container { padding: 16px; max-width: 100%; }
+
+        .form-header { text-align: center; margin-bottom: 40px; }
+        .form-header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.25rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+        .form-header p { color: var(--text-secondary); font-size: 1.05rem; }
+
+        .progress-bar { display: flex; justify-content: center; gap: 8px; margin-bottom: 40px; }
+        .progress-step {
+            width: 48px; height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            transition: var(--transition);
+        }
+        .progress-step.active { background: var(--accent); }
+        .progress-step.completed { background: var(--primary); }
+
+        .form-section {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .form-section.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title .icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: var(--radius);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 1rem;
+        }
+        .section-subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 24px;
+            padding-left: 48px;
+        }
+
+        .form-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px; }
+        .form-row.single { grid-template-columns: 1fr; }
+        .form-row.triple { grid-template-columns: repeat(3, 1fr); }
+        .form-row.name-row { grid-template-columns: 100px 1fr 1fr; }
+        @media (max-width: 600px) { .form-row, .form-row.triple, .form-row.name-row { grid-template-columns: 1fr; } }
+
+        .form-group { margin-bottom: 0; }
+        .form-group.full-width { grid-column: 1 / -1; }
+
+        label { display: block; font-weight: 500; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 6px; }
+        label .required { color: var(--error); margin-left: 2px; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 14px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
+        }
+        input::placeholder, textarea::placeholder { color: var(--text-muted); }
+        select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234a5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6,9 12,15 18,9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 40px;
+        }
+        textarea { resize: vertical; min-height: 100px; }
+
+        .checkbox-group {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 16px; background: var(--surface-elevated);
+            border-radius: var(--radius); cursor: pointer;
+            border: 1.5px solid transparent; transition: var(--transition);
+        }
+        .checkbox-group:hover { border-color: var(--border); }
+        .checkbox-group input[type="checkbox"] {
+            width: 20px; height: 20px; margin: 0;
+            cursor: pointer; accent-color: var(--primary); flex-shrink: 0;
+        }
+        .checkbox-group label { margin: 0; cursor: pointer; font-weight: 400; font-size: 0.95rem; color: var(--text-primary); }
+
+        .radio-group { display: flex; gap: 12px; flex-wrap: wrap; }
+        .radio-option { flex: 1; min-width: 140px; }
+        .radio-option input[type="radio"] { display: none; }
+        .radio-option label {
+            display: flex; align-items: center; justify-content: center;
+            padding: 14px 20px; background: var(--surface-elevated);
+            border: 2px solid var(--border); border-radius: var(--radius);
+            cursor: pointer; font-weight: 500; font-size: 0.95rem;
+            color: var(--text-secondary); transition: var(--transition); text-align: center;
+        }
+        .radio-option input[type="radio"]:checked + label {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+        }
+        .radio-option label:hover { border-color: var(--primary-light); }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 14px 28px; font-family: inherit; font-size: 1rem; font-weight: 600;
+            border-radius: var(--radius); cursor: pointer; transition: var(--transition); border: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white; box-shadow: var(--shadow);
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+        .btn-primary:active { transform: translateY(0); }
+        .btn-secondary { background: var(--surface); color: var(--text-secondary); border: 1.5px solid var(--border); }
+        .btn-secondary:hover { background: var(--surface-elevated); border-color: var(--text-muted); }
+        .btn-accent {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            color: var(--primary-dark); box-shadow: var(--shadow);
+        }
+        .btn-accent:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+
+        .form-actions {
+            display: flex; justify-content: space-between; gap: 16px;
+            margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border);
+        }
+
+        /* Photo Upload Styles */
+        .photo-upload-container { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); }
+        .photo-upload-container h3 { font-size: 1.1rem; color: var(--primary); margin-bottom: 8px; }
+        .photo-upload-container p { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 16px; }
+        
+        .photo-dropzone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: var(--surface-elevated);
+        }
+        .photo-dropzone:hover, .photo-dropzone.dragover {
+            border-color: var(--primary-light);
+            background: rgba(49, 130, 206, 0.05);
+        }
+        .photo-dropzone svg { color: var(--text-muted); margin-bottom: 12px; }
+        .photo-dropzone span { display: block; color: var(--text-secondary); font-size: 0.95rem; }
+        .photo-dropzone small { color: var(--text-muted); font-size: 0.8rem; }
+        
+        .photo-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .photo-preview-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+        }
+        .photo-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .photo-preview-item .remove-photo {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        .photo-preview-item .remove-photo:hover { background: var(--error); }
+
+        .calendar-container { margin-top: 24px; }
+        .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .calendar-header h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--primary); }
+        .calendar-nav { display: flex; gap: 8px; }
+        .calendar-nav button {
+            width: 36px; height: 36px; border-radius: var(--radius);
+            border: 1px solid var(--border); background: var(--surface);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: var(--transition);
+        }
+        .calendar-nav button:hover { background: var(--surface-elevated); border-color: var(--primary); }
+
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 24px; }
+        .calendar-day-header {
+            text-align: center; font-size: 0.75rem; font-weight: 600;
+            color: var(--text-muted); padding: 8px 4px;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .calendar-day {
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+            border-radius: var(--radius); font-size: 0.9rem;
+            cursor: pointer; transition: var(--transition); border: 2px solid transparent;
+        }
+        .calendar-day:hover:not(.disabled):not(.empty) { background: var(--surface-elevated); border-color: var(--primary-light); }
+        .calendar-day.selected { background: var(--primary); color: white; font-weight: 600; }
+        .calendar-day.disabled { color: var(--text-muted); cursor: not-allowed; opacity: 0.4; }
+        .calendar-day.empty { cursor: default; }
+        .calendar-day.today { border-color: var(--accent); }
+
+        .time-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
+        .time-slot {
+            padding: 10px 12px; text-align: center;
+            border: 1.5px solid var(--border); border-radius: var(--radius);
+            font-size: 0.875rem; cursor: pointer; transition: var(--transition); background: var(--surface);
+        }
+        .time-slot:hover:not(.disabled) { border-color: var(--primary-light); background: var(--surface-elevated); }
+        .time-slot.selected { background: var(--primary); border-color: var(--primary); color: white; font-weight: 600; }
+        .time-slot.disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .selected-datetime {
+            margin-top: 20px; padding: 16px;
+            background: var(--success-bg); border-radius: var(--radius); border: 1px solid var(--success);
+        }
+        .selected-datetime p { color: var(--success); font-weight: 500; display: flex; align-items: center; gap: 8px; }
+
+        .success-screen { text-align: center; padding: 48px 24px; }
+        .success-icon {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, var(--success) 0%, #48bb78 100%);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 24px; animation: scaleIn 0.4s ease;
+        }
+        @keyframes scaleIn { from { transform: scale(0); } to { transform: scale(1); } }
+        .success-icon svg { width: 40px; height: 40px; color: white; }
+        .success-screen h2 { font-family: 'Playfair Display', serif; font-size: 1.75rem; color: var(--primary); margin-bottom: 12px; }
+        .success-screen p { color: var(--text-secondary); font-size: 1.05rem; max-width: 400px; margin: 0 auto; }
+
+        .success-details { margin-top: 32px; padding: 24px; background: var(--surface-elevated); border-radius: var(--radius); text-align: left; }
+        .success-details h3 { font-size: 1rem; color: var(--primary); margin-bottom: 16px; }
+        .success-details dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; }
+        .success-details dt { color: var(--text-muted); font-size: 0.875rem; }
+        .success-details dd { color: var(--text-primary); font-weight: 500; }
+
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .loading-overlay.active { display: flex; }
+        .spinner {
+            width: 48px; height: 48px;
+            border: 4px solid var(--border); border-top-color: var(--primary);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error-message { color: var(--error); font-size: 0.85rem; margin-top: 4px; display: none; }
+        .form-group.error input, .form-group.error select, .form-group.error textarea { border-color: var(--error); }
+        .form-group.error .error-message { display: block; }
+
+        .agent-info { display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--surface-elevated); border-radius: var(--radius); margin-bottom: 24px; }
+        .agent-avatar { width: 48px; height: 48px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.1rem; }
+        .agent-details h4 { font-size: 1rem; color: var(--text-primary); margin-bottom: 2px; }
+        .agent-details p { font-size: 0.875rem; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+
+    <div class="container">
+        <header class="form-header">
+            <h1>Property Valuation Request</h1>
+            <p>Complete the form below to request your free property valuation</p>
+        </header>
+
+        <div class="progress-bar" id="progressBar"></div>
+
+        <form id="valuationForm">
+            <!-- Section: Contact Details -->
+            <section class="form-section" id="section-contact">
+                <h2 class="section-title">
+                    <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span>
+                    Your Details
+                </h2>
+                <p class="section-subtitle">Please provide your contact information</p>
+
+                <div class="form-row name-row">
+                    <div class="form-group">
+                        <label for="title">Title <span class="required">*</span></label>
+                        <select id="title" name="title" required>
+                            <option value="">Select</option>
+                            <option value="Withheld">Prefer not to say</option>
+                            <option value="Mr">Mr</option>
+                            <option value="Ms">Ms</option>
+                            <option value="Mrs">Mrs</option>
+                            <option value="Miss">Miss</option>
+                            <option value="Dr">Dr</option>
+                            <option value="Prof">Prof</option>
+                            <option value="Rev">Rev</option>
+                            <option value="Lady">Lady</option>
+                            <option value="Lord">Lord</option>
+                            <option value="Sir">Sir</option>
+                            <option value="Mr & Mrs">Mr & Mrs</option>
+                        </select>
+                        <span class="error-message">Please select a title</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="firstName">First Name <span class="required">*</span></label>
+                        <input type="text" id="firstName" name="firstName" required placeholder="First name">
+                        <span class="error-message">Please enter your first name</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name <span class="required">*</span></label>
+                        <input type="text" id="lastName" name="lastName" required placeholder="Last name">
+                        <span class="error-message">Please enter your last name</span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="mobile">Mobile Number <span class="required">*</span></label>
+                        <input type="tel" id="mobile" name="mobile" required placeholder="07XXX XXXXXX">
+                        <span class="error-message">Please enter a valid mobile number</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address <span class="required">*</span></label>
+                        <input type="email" id="email" name="email" required placeholder="your@email.com">
+                        <span class="error-message">Please enter a valid email address</span>
+                    </div>
+                </div>
+
+                <div class="form-row single" style="margin-top: 24px;">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="hasPartner" name="hasPartner">
+                        <label for="hasPartner">I have a partner/joint owner who should be included in this valuation</label>
+                    </div>
+                </div>
+
+                <div id="partnerSection" style="display: none; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border);">
+                    <h3 style="font-size: 1.1rem; color: var(--primary); margin-bottom: 16px;">Partner Details</h3>
+                    <div class="form-row name-row">
+                        <div class="form-group">
+                            <label for="partnerTitle">Title</label>
+                            <select id="partnerTitle" name="partnerTitle">
+                                <option value="">Select</option>
+                                <option value="Withheld">Prefer not to say</option>
+                                <option value="Mr">Mr</option>
+                                <option value="Ms">Ms</option>
+                                <option value="Mrs">Mrs</option>
+                                <option value="Miss">Miss</option>
+                                <option value="Dr">Dr</option>
+                                <option value="Prof">Prof</option>
+                                <option value="Rev">Rev</option>
+                                <option value="Lady">Lady</option>
+                                <option value="Lord">Lord</option>
+                                <option value="Sir">Sir</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="partnerFirstName">First Name</label>
+                            <input type="text" id="partnerFirstName" name="partnerFirstName" placeholder="First name">
+                        </div>
+                        <div class="form-group">
+                            <label for="partnerLastName">Last Name</label>
+                            <input type="text" id="partnerLastName" name="partnerLastName" placeholder="Last name">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="partnerMobile">Mobile Number</label>
+                            <input type="tel" id="partnerMobile" name="partnerMobile" placeholder="07XXX XXXXXX">
+                        </div>
+                        <div class="form-group">
+                            <label for="partnerEmail">Email Address</label>
+                            <input type="email" id="partnerEmail" name="partnerEmail" placeholder="partner@email.com">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <div></div>
+                    <button type="button" class="btn btn-primary" onclick="goToNext()">
+                        Continue
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"></polyline></svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Section: Property Type Selection -->
+            <section class="form-section" id="section-type">
+                <h2 class="section-title">
+                    <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span>
+                    What would you like to do?
+                </h2>
+                <p class="section-subtitle">Tell us whether you're looking to sell or rent your property</p>
+
+                <div class="radio-group" style="margin-top: 24px;">
+                    <div class="radio-option" style="flex: 1;">
+                        <input type="radio" id="typeSale" name="valuationType" value="sale">
+                        <label for="typeSale">
+                            <span style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline></svg>
+                                Sell my property
+                            </span>
+                        </label>
+                    </div>
+                    <div class="radio-option" style="flex: 1;">
+                        <input type="radio" id="typeRental" name="valuationType" value="rental">
+                        <label for="typeRental">
+                            <span style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                Rent out my property
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="goToPrev()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"></polyline></svg>
+                        Back
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="goToNext()" id="typeNextBtn" disabled>
+                        Continue
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"></polyline></svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Section: Property Address -->
+            <section class="form-section" id="section-address">
+                <h2 class="section-title">
+                    <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
+                    Property Address
+                </h2>
+                <p class="section-subtitle">Enter the address of the property to be valued</p>
+
+                <div class="form-row single">
+                    <div class="form-group">
+                        <label for="propAddress1">Address Line 1 <span class="required">*</span></label>
+                        <input type="text" id="propAddress1" name="propAddress1" required placeholder="House number and street">
+                        <span class="error-message">Please enter the address</span>
+                    </div>
+                </div>
+
+                <div class="form-row single">
+                    <div class="form-group">
+                        <label for="propAddress2">Address Line 2</label>
+                        <input type="text" id="propAddress2" name="propAddress2" placeholder="Apartment, suite, etc. (optional)">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="propCity">City <span class="required">*</span></label>
+                        <input type="text" id="propCity" name="propCity" required placeholder="City or town">
+                        <span class="error-message">Please enter the city</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="propCounty">County <span class="required">*</span></label>
+                        <select id="propCounty" name="propCounty" required>
+                            <option value="">Select county</option>
+                            <option value="Bedfordshire">Bedfordshire</option>
+                            <option value="Berkshire">Berkshire</option>
+                            <option value="Bristol">Bristol</option>
+                            <option value="Buckinghamshire">Buckinghamshire</option>
+                            <option value="Cambridgeshire">Cambridgeshire</option>
+                            <option value="Cheshire">Cheshire</option>
+                            <option value="Cornwall">Cornwall</option>
+                            <option value="County Durham">County Durham</option>
+                            <option value="Cumbria">Cumbria</option>
+                            <option value="Derbyshire">Derbyshire</option>
+                            <option value="Devon">Devon</option>
+                            <option value="Dorset">Dorset</option>
+                            <option value="East Riding of Yorkshire">East Riding of Yorkshire</option>
+                            <option value="East Sussex">East Sussex</option>
+                            <option value="Essex">Essex</option>
+                            <option value="Gloucestershire">Gloucestershire</option>
+                            <option value="Greater London">Greater London</option>
+                            <option value="Greater Manchester">Greater Manchester</option>
+                            <option value="Hampshire">Hampshire</option>
+                            <option value="Herefordshire">Herefordshire</option>
+                            <option value="Hertfordshire">Hertfordshire</option>
+                            <option value="Isle of Wight">Isle of Wight</option>
+                            <option value="Kent">Kent</option>
+                            <option value="Lancashire">Lancashire</option>
+                            <option value="Leicestershire">Leicestershire</option>
+                            <option value="Lincolnshire">Lincolnshire</option>
+                            <option value="Merseyside">Merseyside</option>
+                            <option value="Norfolk">Norfolk</option>
+                            <option value="North Yorkshire">North Yorkshire</option>
+                            <option value="Northamptonshire">Northamptonshire</option>
+                            <option value="Northumberland">Northumberland</option>
+                            <option value="Nottinghamshire">Nottinghamshire</option>
+                            <option value="Oxfordshire">Oxfordshire</option>
+                            <option value="Rutland">Rutland</option>
+                            <option value="Shropshire">Shropshire</option>
+                            <option value="Somerset">Somerset</option>
+                            <option value="South Yorkshire">South Yorkshire</option>
+                            <option value="Staffordshire">Staffordshire</option>
+                            <option value="Suffolk">Suffolk</option>
+                            <option value="Surrey">Surrey</option>
+                            <option value="Tyne and Wear">Tyne and Wear</option>
+                            <option value="Warwickshire">Warwickshire</option>
+                            <option value="West Midlands">West Midlands</option>
+                            <option value="West Sussex">West Sussex</option>
+                            <option value="West Yorkshire">West Yorkshire</option>
+                            <option value="Wiltshire">Wiltshire</option>
+                            <option value="Worcestershire">Worcestershire</option>
+                        </select>
+                        <span class="error-message">Please select a county</span>
+                    </div>
+                </div>
+
+                <div class="form-row single">
+                    <div class="form-group" style="max-width: 200px;">
+                        <label for="propPostcode">Postcode <span class="required">*</span></label>
+                        <input type="text" id="propPostcode" name="propPostcode" required placeholder="e.g. SW1A 1AA" style="text-transform: uppercase;">
+                        <span class="error-message">Please enter the postcode</span>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="goToPrev()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"></polyline></svg>
+                        Back
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="goToNext()">
+                        Continue
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"></polyline></svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Section: Valuation Details -->
+            <section class="form-section" id="section-details">
+                <h2 class="section-title">
+                    <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline></svg></span>
+                    Property Details
+                </h2>
+                <p class="section-subtitle">Tell us about your property</p>
+
+                <div class="form-row triple">
+                    <div class="form-group">
+                        <label for="bedrooms">Bedrooms <span class="required">*</span></label>
+                        <select id="bedrooms" name="bedrooms" required>
+                            <option value="">Select</option>
+                            <option value="0">Studio</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6+</option>
+                        </select>
+                        <span class="error-message">Required</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="bathrooms">Bathrooms <span class="required">*</span></label>
+                        <select id="bathrooms" name="bathrooms" required>
+                            <option value="">Select</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5+</option>
+                        </select>
+                        <span class="error-message">Required</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="propertyAge">Property Age</label>
+                        <select id="propertyAge" name="propertyAge">
+                            <option value="">Select (optional)</option>
+                            <option value="New Build">New Build</option>
+                            <option value="Under 5 years">Under 5 years</option>
+                            <option value="5-10 years">5-10 years</option>
+                            <option value="10-20 years">10-20 years</option>
+                            <option value="20-50 years">20-50 years</option>
+                            <option value="50-100 years">50-100 years</option>
+                            <option value="Over 100 years">Over 100 years</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="propertyType">Property Type <span class="required">*</span></label>
+                        <select id="propertyType" name="propertyType" required>
+                            <option value="">Select property type</option>
+                            <option value="Apartment">Apartment</option>
+                            <option value="Bungalow">Bungalow</option>
+                            <option value="Cottage">Cottage</option>
+                            <option value="Detached House">Detached House</option>
+                            <option value="Detached Bungalow">Detached Bungalow</option>
+                            <option value="End-terrace">End-terrace</option>
+                            <option value="Flat">Flat</option>
+                            <option value="House">House</option>
+                            <option value="Maisonette">Maisonette</option>
+                            <option value="Mews">Mews</option>
+                            <option value="Penthouse">Penthouse</option>
+                            <option value="Semi-detached House">Semi-detached House</option>
+                            <option value="Semi-detached Bungalow">Semi-detached Bungalow</option>
+                            <option value="Studio">Studio</option>
+                            <option value="Terraced House">Terraced House</option>
+                            <option value="Terraced Bungalow">Terraced Bungalow</option>
+                            <option value="Town House">Town House</option>
+                            <option value="Villa">Villa</option>
+                        </select>
+                        <span class="error-message">Please select a property type</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="parking">Parking</label>
+                        <select id="parking" name="parking">
+                            <option value="">Select parking (optional)</option>
+                            <option value="Allocated">Allocated</option>
+                            <option value="Driveway">Driveway</option>
+                            <option value="Garage">Garage</option>
+                            <option value="Double Garage">Double Garage</option>
+                            <option value="Off-Street">Off-Street</option>
+                            <option value="On-Street">On-Street</option>
+                            <option value="Permit">Permit</option>
+                            <option value="No Parking Available">No Parking Available</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row single">
+                    <div class="form-group">
+                        <label for="propertyDescription">Brief Property Description</label>
+                        <textarea id="propertyDescription" name="propertyDescription" placeholder="Tell us a bit about your property - any notable features, recent improvements, or anything else you'd like us to know..."></textarea>
+                    </div>
+                </div>
+
+                <div id="salesFields" style="display: none;">
+                    <div class="form-row single" style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border);">
+                        <div class="form-group" style="max-width: 280px;">
+                            <label for="tenure">Tenure <span class="required">*</span></label>
+                            <select id="tenure" name="tenure">
+                                <option value="">Select tenure</option>
+                                <option value="Freehold">Freehold</option>
+                                <option value="Leasehold">Leasehold</option>
+                                <option value="Feudal">Feudal</option>
+                                <option value="Commonhold">Commonhold</option>
+                                <option value="Share of Freehold">Share of Freehold</option>
+                                <option value="Flying Freehold">Flying Freehold</option>
+                            </select>
+                            <span class="error-message">Please select tenure</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border);">
+                    <h3 style="font-size: 1.1rem; color: var(--primary); margin-bottom: 16px;">Your Valuation Estimate</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="estimatedValue">Your Estimated Value (£)</label>
+                            <input type="text" id="estimatedValue" name="estimatedValue" placeholder="e.g. 350,000">
+                        </div>
+                        <div class="form-group">
+                            <label for="estimateReason">Reason for Your Estimate</label>
+                            <input type="text" id="estimateReason" name="estimateReason" placeholder="e.g. Recent sales nearby, Zoopla estimate">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="photo-upload-container">
+                    <h3>Property Photos</h3>
+                    <p>Upload photos of your property to help us prepare for the valuation (optional)</p>
+                    
+                    <div class="photo-dropzone" id="photoDropzone">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21,15 16,10 5,21"></polyline>
+                        </svg>
+                        <span>Click to upload or drag and drop</span>
+                        <small>PNG, JPG or JPEG (max 12MB total)</small>
+                        <input type="file" id="photoInput" multiple accept="image/png,image/jpeg,image/jpg" style="display: none;">
+                    </div>
+                    
+                    <div class="photo-preview-grid" id="photoPreviewGrid"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="goToPrev()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"></polyline></svg>
+                        Back
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="goToNext()">
+                        Continue
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"></polyline></svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Section: Booking -->
+            <section class="form-section" id="section-booking">
+                <h2 class="section-title">
+                    <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+                    Book Your Valuation
+                </h2>
+                <p class="section-subtitle">Select a convenient date and time for your property valuation</p>
+
+                <div id="agentInfo" class="agent-info" style="display: none;">
+                    <div class="agent-avatar" id="agentInitials">JW</div>
+                    <div class="agent-details">
+                        <h4 id="agentName">James Wright</h4>
+                        <p id="agentBranch">Folkestone Branch</p>
+                    </div>
+                </div>
+
+                <div class="calendar-container" id="calendarContainer">
+                    <div class="calendar-header">
+                        <h3 id="calendarMonth">February 2026</h3>
+                        <div class="calendar-nav">
+                            <button type="button" id="prevMonth"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"></polyline></svg></button>
+                            <button type="button" id="nextMonth"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"></polyline></svg></button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        <div class="calendar-day-header">Mon</div>
+                        <div class="calendar-day-header">Tue</div>
+                        <div class="calendar-day-header">Wed</div>
+                        <div class="calendar-day-header">Thu</div>
+                        <div class="calendar-day-header">Fri</div>
+                        <div class="calendar-day-header">Sat</div>
+                        <div class="calendar-day-header">Sun</div>
+                    </div>
+
+                    <div id="timeSlotsContainer" style="display: none;">
+                        <h3 style="font-size: 1rem; color: var(--primary); margin-bottom: 12px;">Available Times for <span id="selectedDateDisplay"></span></h3>
+                        <div class="time-slots" id="timeSlots"></div>
+                    </div>
+
+                    <div id="selectedDateTime" class="selected-datetime" style="display: none;">
+                        <p>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"></polyline></svg>
+                            <span id="bookingConfirmText"></span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="goToPrev()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"></polyline></svg>
+                        Back
+                    </button>
+                    <button type="button" class="btn btn-accent" onclick="submitForm()" id="submitBtn" disabled>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"></polyline></svg>
+                        Book Valuation
+                    </button>
+                </div>
+            </section>
+
+            <!-- Section: Submit Only -->
+            <section class="form-section" id="section-submit">
+                <h2 class="section-title">
+                    <span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"></polyline></svg></span>
+                    Submit Your Request
+                </h2>
+                <p class="section-subtitle">Review your information and submit your valuation request</p>
+
+                <div style="background: var(--surface-elevated); border-radius: var(--radius); padding: 20px; margin-bottom: 24px;">
+                    <p style="color: var(--text-secondary); line-height: 1.7;">
+                        Thank you for providing your property details. Once you submit this form, our team will review your information and contact you to arrange a convenient time for your property valuation.
+                    </p>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="goToPrev()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"></polyline></svg>
+                        Back
+                    </button>
+                    <button type="button" class="btn btn-accent" onclick="submitForm()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"></path><path d="M22 2L15 22 11 13 2 9 22 2z"></path></svg>
+                        Submit Request
+                    </button>
+                </div>
+            </section>
+
+            <!-- Section: Success -->
+            <section class="form-section" id="section-success">
+                <div class="success-screen">
+                    <div class="success-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"></polyline></svg>
+                    </div>
+                    <h2>Thank You!</h2>
+                    <p id="successMessage">Your valuation request has been submitted successfully. We'll be in touch soon.</p>
+                    <div class="success-details" id="successDetails" style="display: none;">
+                        <h3>Booking Details</h3>
+                        <dl>
+                            <dt>Date</dt><dd id="successDate">-</dd>
+                            <dt>Time</dt><dd id="successTime">-</dd>
+                            <dt>Property</dt><dd id="successProperty">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </section>
+        </form>
+    </div>
+
+    <script>
+        const config = {
+            token: null, contactId: null, listingId: null,
+            allowBooking: true, earliestTime: '09:00', latestTime: '18:00',
+            embed: false, isSales: true, isLettings: false,
+            canBookSaturday: false, canBookSunday: false
+        };
+
+        let sectionFlow = [];
+        let currentSectionIndex = 0;
+        let availability = {};
+        let selectedDate = null;
+        let selectedTime = null;
+        let agentData = null;
+        let uploadedPhotos = []; // Array to store uploaded photo data
+        let originalParams = ''; // Store original URL parameters
+
+        function parseUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            
+            // Store all original parameters to pass along to API calls
+            originalParams = window.location.search.substring(1); // Remove the leading '?'
+            
+            config.token = params.get('token');
+            config.contactId = params.get('contactId');
+            config.listingId = params.get('listingId');
+            config.allowBooking = params.get('allowBooking') !== 'false';
+            config.earliestTime = params.get('earliestTime') || '09:00';
+            config.latestTime = params.get('latestTime') || '18:00';
+            config.embed = params.get('embed') === 'true';
+            config.canBookSaturday = params.get('canBookSaturday') === 'true';
+            config.canBookSunday = params.get('canBookSunday') === 'true';
+            
+            // If neither isSales nor isLettings is specified, default to both being true
+            const isSalesParam = params.get('isSales');
+            const isLettingsParam = params.get('isLettings');
+            
+            if (isSalesParam === null && isLettingsParam === null) {
+                // Neither specified - default to both
+                config.isSales = true;
+                config.isLettings = true;
+            } else {
+                // At least one specified - use explicit values (default false if not specified)
+                config.isSales = isSalesParam === 'true';
+                config.isLettings = isLettingsParam === 'true';
+            }
+
+            if (config.embed) document.body.classList.add('embedded');
+            buildSectionFlow();
+        }
+
+        function buildSectionFlow() {
+            sectionFlow = ['contact'];
+            if (config.isSales && config.isLettings) sectionFlow.push('type');
+            sectionFlow.push('address', 'details');
+            sectionFlow.push(config.allowBooking ? 'booking' : 'submit');
+            
+            setupForm();
+            buildProgressBar();
+            showCurrentSection();
+        }
+
+        function setupForm() {
+            const salesFields = document.getElementById('salesFields');
+            const tenureField = document.getElementById('tenure');
+            
+            if (config.isSales && config.isLettings) {
+                document.querySelectorAll('[name="valuationType"]').forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        document.getElementById('typeNextBtn').disabled = false;
+                        salesFields.style.display = this.value === 'sale' ? 'block' : 'none';
+                        tenureField.required = this.value === 'sale';
+                        // Auto-advance to next section after a brief delay for visual feedback
+                        setTimeout(() => goToNext(), 300);
+                    });
+                });
+            } else if (config.isSales) {
+                salesFields.style.display = 'block';
+                tenureField.required = true;
+            }
+        }
+
+        function buildProgressBar() {
+            const progressBar = document.getElementById('progressBar');
+            progressBar.innerHTML = '';
+            for (let i = 0; i < sectionFlow.length; i++) {
+                const step = document.createElement('div');
+                step.className = 'progress-step' + (i === 0 ? ' active' : '');
+                progressBar.appendChild(step);
+            }
+        }
+
+        function updateProgress() {
+            document.querySelectorAll('.progress-step').forEach((step, index) => {
+                step.classList.remove('active', 'completed');
+                if (index === currentSectionIndex) step.classList.add('active');
+                else if (index < currentSectionIndex) step.classList.add('completed');
+            });
+        }
+
+        function showCurrentSection() {
+            document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+            const sectionId = 'section-' + sectionFlow[currentSectionIndex];
+            document.getElementById(sectionId)?.classList.add('active');
+            updateProgress();
+            document.querySelector('.container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function validateCurrentSection() {
+            const sectionId = 'section-' + sectionFlow[currentSectionIndex];
+            const section = document.getElementById(sectionId);
+            if (!section) return true;
+
+            if (sectionFlow[currentSectionIndex] === 'type') {
+                return !!document.querySelector('[name="valuationType"]:checked');
+            }
+
+            let valid = true;
+            section.querySelectorAll('[required]').forEach(field => {
+                const formGroup = field.closest('.form-group');
+                if (field.offsetParent === null) return;
+                
+                if (!field.value.trim()) {
+                    formGroup?.classList.add('error');
+                    valid = false;
+                } else {
+                    formGroup?.classList.remove('error');
+                }
+                
+                if (field.type === 'email' && field.value) {
+                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value)) {
+                        formGroup?.classList.add('error');
+                        valid = false;
+                    }
+                }
+            });
+            return valid;
+        }
+
+        function goToNext() {
+            if (!validateCurrentSection()) return;
+            currentSectionIndex++;
+            if (sectionFlow[currentSectionIndex] === 'booking') fetchAvailability();
+            showCurrentSection();
+        }
+
+        function goToPrev() {
+            if (currentSectionIndex > 0) {
+                currentSectionIndex--;
+                showCurrentSection();
+            }
+        }
+
+        function buildQueryString(extra = {}) {
+            // Start with all original URL parameters
+            const params = new URLSearchParams(originalParams);
+            
+            // Add/override with any extra parameters
+            Object.entries(extra).forEach(([k, v]) => {
+                if (v != null) params.set(k, v);
+            });
+            
+            return params.toString();
+        }
+
+        async function fetchContactData() {
+            if (!config.contactId) return;
+            showLoading(true);
+            try {
+                const res = await fetch('https://n8n.apex27.co.uk/webhook/461425c0-5226-442a-a5c3-daaf29559802?' + buildQueryString());
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.title) document.getElementById('title').value = data.title;
+                    if (data.firstName) document.getElementById('firstName').value = data.firstName;
+                    if (data.lastName) document.getElementById('lastName').value = data.lastName;
+                    if (data.mobile) document.getElementById('mobile').value = data.mobile.trim();
+                    if (data.email) document.getElementById('email').value = data.email;
+                }
+            } catch (e) { console.error('Error fetching contact:', e); }
+            showLoading(false);
+        }
+
+        async function fetchListingData() {
+            if (!config.listingId) return;
+            showLoading(true);
+            try {
+                const res = await fetch('https://n8n.apex27.co.uk/webhook/32ce5616-dcea-47f4-a871-bb2a3aa28d84?' + buildQueryString());
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.address1) document.getElementById('propAddress1').value = data.address1;
+                    if (data.address2) document.getElementById('propAddress2').value = data.address2;
+                    if (data.city) document.getElementById('propCity').value = data.city;
+                    if (data.postalCode) document.getElementById('propPostcode').value = data.postalCode;
+                    
+                    const countySelect = document.getElementById('propCounty');
+                    if (data.county) {
+                        let exists = [...countySelect.options].some(o => o.value === data.county);
+                        if (!exists) {
+                            const opt = document.createElement('option');
+                            opt.value = opt.text = data.county;
+                            countySelect.add(opt);
+                        }
+                        countySelect.value = data.county;
+                    }
+                    
+                    if (data.bedrooms != null) document.getElementById('bedrooms').value = String(data.bedrooms);
+                    if (data.bathrooms != null) document.getElementById('bathrooms').value = String(data.bathrooms);
+                    
+                    if (data.propertyType) {
+                        const typeMap = {
+                            'detached_house': 'Detached House',
+                            'semi-detached_house': 'Semi-detached House',
+                            'terraced_house': 'Terraced House',
+                            'flat': 'Flat',
+                            'bungalow': 'Bungalow'
+                        };
+                        document.getElementById('propertyType').value = typeMap[data.propertyType] || data.propertyType;
+                    }
+                }
+            } catch (e) { console.error('Error fetching listing:', e); }
+            showLoading(false);
+        }
+
+        async function fetchAvailability() {
+            showLoading(true);
+            try {
+                const postcode = document.getElementById('propPostcode').value;
+                const res = await fetch('https://n8n.apex27.co.uk/webhook/90a17957-701b-411b-baeb-5e7e3aa7c608?' + buildQueryString({ postcode }));
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data?.[0]) {
+                        availability = data[0].availability || {};
+                        agentData = { user: data[0].user, branch: data[0].branch };
+                        displayAgentInfo();
+                        renderCalendar();
+                    }
+                }
+            } catch (e) { console.error('Error fetching availability:', e); }
+            showLoading(false);
+        }
+
+        function displayAgentInfo() {
+            if (!agentData?.user) return;
+            const { user, branch } = agentData;
+            document.getElementById('agentInitials').textContent = (user.firstName?.[0] || '') + (user.lastName?.[0] || '');
+            document.getElementById('agentName').textContent = [user.firstName, user.lastName].filter(Boolean).join(' ');
+            document.getElementById('agentBranch').textContent = branch ? branch.name + ' Branch' : '';
+            document.getElementById('agentInfo').style.display = 'flex';
+        }
+
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const monthDisplay = document.getElementById('calendarMonth');
+            
+            grid.querySelectorAll('.calendar-day').forEach(d => d.remove());
+            
+            const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            monthDisplay.textContent = months[currentMonth] + ' ' + currentYear;
+            
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const today = new Date(); today.setHours(0,0,0,0);
+            
+            let startDay = firstDay.getDay() - 1;
+            if (startDay < 0) startDay = 6;
+            
+            for (let i = 0; i < startDay; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'calendar-day empty';
+                grid.appendChild(empty);
+            }
+            
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day';
+                dayEl.textContent = day;
+                
+                const dateStr = currentYear + '-' + String(currentMonth+1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+                const dateObj = new Date(currentYear, currentMonth, day);
+                const dayOfWeek = dateObj.getDay(); // 0 = Sunday, 6 = Saturday
+                
+                // Check if weekend booking is allowed
+                const isSaturday = dayOfWeek === 6;
+                const isSunday = dayOfWeek === 0;
+                const isWeekendBlocked = (isSaturday && !config.canBookSaturday) || (isSunday && !config.canBookSunday);
+                
+                if (dateObj < today) {
+                    dayEl.classList.add('disabled');
+                } else if (isWeekendBlocked) {
+                    dayEl.classList.add('disabled');
+                } else if (availability[dateStr] && Object.values(availability[dateStr]).some(v => v)) {
+                    dayEl.addEventListener('click', function() { selectDate(dateStr, this); });
+                } else {
+                    dayEl.classList.add('disabled');
+                }
+                
+                if (dateObj.getTime() === today.getTime()) dayEl.classList.add('today');
+                if (selectedDate === dateStr) dayEl.classList.add('selected');
+                
+                grid.appendChild(dayEl);
+            }
+        }
+
+        function selectDate(dateStr, element) {
+            selectedDate = dateStr;
+            selectedTime = null;
+            
+            document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            const dateObj = new Date(dateStr);
+            document.getElementById('selectedDateDisplay').textContent = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+            
+            const slotsGrid = document.getElementById('timeSlots');
+            slotsGrid.innerHTML = '';
+            
+            const slots = availability[dateStr];
+            if (slots) {
+                const earliest = config.earliestTime.replace(':', '');
+                const latest = config.latestTime.replace(':', '');
+                
+                Object.entries(slots).forEach(([time, available]) => {
+                    const timeNum = time.replace(/:/g, '').substring(0, 4);
+                    if (timeNum >= earliest && timeNum <= latest) {
+                        const slot = document.createElement('div');
+                        slot.className = 'time-slot' + (available ? '' : ' disabled');
+                        slot.textContent = time.substring(0, 5);
+                        if (available) slot.addEventListener('click', function() { selectTime(time.substring(0,5), this); });
+                        slotsGrid.appendChild(slot);
+                    }
+                });
+            }
+            
+            document.getElementById('timeSlotsContainer').style.display = 'block';
+            document.getElementById('selectedDateTime').style.display = 'none';
+            document.getElementById('submitBtn').disabled = true;
+        }
+
+        function selectTime(time, element) {
+            selectedTime = time;
+            document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            const dateObj = new Date(selectedDate);
+            document.getElementById('bookingConfirmText').textContent = 
+                'Selected: ' + dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) + ' at ' + time;
+            document.getElementById('selectedDateTime').style.display = 'block';
+            document.getElementById('submitBtn').disabled = false;
+        }
+
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            currentMonth--;
+            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            renderCalendar();
+        });
+
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            currentMonth++;
+            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            renderCalendar();
+        });
+
+        document.getElementById('hasPartner').addEventListener('change', function() {
+            document.getElementById('partnerSection').style.display = this.checked ? 'block' : 'none';
+        });
+
+        // Photo upload handling
+        const photoDropzone = document.getElementById('photoDropzone');
+        const photoInput = document.getElementById('photoInput');
+        const photoPreviewGrid = document.getElementById('photoPreviewGrid');
+
+        photoDropzone.addEventListener('click', () => photoInput.click());
+        
+        photoDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            photoDropzone.classList.add('dragover');
+        });
+        
+        photoDropzone.addEventListener('dragleave', () => {
+            photoDropzone.classList.remove('dragover');
+        });
+        
+        photoDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            photoDropzone.classList.remove('dragover');
+            handlePhotoFiles(e.dataTransfer.files);
+        });
+        
+        photoInput.addEventListener('change', (e) => {
+            handlePhotoFiles(e.target.files);
+            photoInput.value = ''; // Reset input so same file can be selected again
+        });
+
+        function getTotalPhotoSize() {
+            return uploadedPhotos.reduce((total, photo) => {
+                // Base64 is roughly 4/3 the size of the original, so estimate original size
+                const base64Length = photo.data.length - photo.data.indexOf(',') - 1;
+                return total + Math.ceil(base64Length * 0.75);
+            }, 0);
+        }
+
+        function handlePhotoFiles(files) {
+            const maxTotalSize = 12 * 1024 * 1024; // 12MB total limit
+            const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+            
+            let currentTotal = getTotalPhotoSize();
+            
+            Array.from(files).forEach(file => {
+                if (!allowedTypes.includes(file.type)) {
+                    alert(`${file.name} is not a supported image format. Please use PNG or JPEG.`);
+                    return;
+                }
+                
+                if (currentTotal + file.size > maxTotalSize) {
+                    const remainingMB = ((maxTotalSize - currentTotal) / (1024 * 1024)).toFixed(1);
+                    alert(`Cannot add ${file.name}. Total upload limit is 12MB. You have approximately ${remainingMB}MB remaining.`);
+                    return;
+                }
+                
+                currentTotal += file.size;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const photoData = {
+                        id: Date.now() + Math.random(),
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        data: e.target.result // Base64 encoded
+                    };
+                    uploadedPhotos.push(photoData);
+                    renderPhotoPreview();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderPhotoPreview() {
+            photoPreviewGrid.innerHTML = '';
+            const totalSize = getTotalPhotoSize();
+            const totalMB = (totalSize / (1024 * 1024)).toFixed(1);
+            
+            uploadedPhotos.forEach((photo, index) => {
+                const item = document.createElement('div');
+                item.className = 'photo-preview-item';
+                item.innerHTML = `
+                    <img src="${photo.data}" alt="${photo.name}">
+                    <button type="button" class="remove-photo" onclick="removePhoto(${index})">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                `;
+                photoPreviewGrid.appendChild(item);
+            });
+            
+            // Update the dropzone text to show remaining space
+            const dropzoneText = photoDropzone.querySelector('small');
+            if (uploadedPhotos.length > 0) {
+                dropzoneText.textContent = `${uploadedPhotos.length} photo${uploadedPhotos.length !== 1 ? 's' : ''} (${totalMB}MB of 12MB used)`;
+            } else {
+                dropzoneText.textContent = 'PNG, JPG or JPEG (max 12MB total)';
+            }
+        }
+
+        function removePhoto(index) {
+            uploadedPhotos.splice(index, 1);
+            renderPhotoPreview();
+        }
+
+        async function submitForm() {
+            showLoading(true);
+            
+            let valuationType = 'sale';
+            if (config.isSales && config.isLettings) {
+                const sel = document.querySelector('[name="valuationType"]:checked');
+                valuationType = sel ? sel.value : 'sale';
+            } else if (config.isLettings && !config.isSales) {
+                valuationType = 'rental';
+            }
+
+            const formData = {
+                title: document.getElementById('title').value,
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                mobile: document.getElementById('mobile').value,
+                email: document.getElementById('email').value,
+                hasPartner: document.getElementById('hasPartner').checked,
+                partnerTitle: document.getElementById('partnerTitle')?.value,
+                partnerFirstName: document.getElementById('partnerFirstName')?.value,
+                partnerLastName: document.getElementById('partnerLastName')?.value,
+                partnerMobile: document.getElementById('partnerMobile')?.value,
+                partnerEmail: document.getElementById('partnerEmail')?.value,
+                valuationType,
+                propAddress1: document.getElementById('propAddress1').value,
+                propAddress2: document.getElementById('propAddress2').value,
+                propCity: document.getElementById('propCity').value,
+                propCounty: document.getElementById('propCounty').value,
+                propPostcode: document.getElementById('propPostcode').value,
+                bedrooms: document.getElementById('bedrooms').value,
+                bathrooms: document.getElementById('bathrooms').value,
+                propertyType: document.getElementById('propertyType').value,
+                parking: document.getElementById('parking').value,
+                propertyAge: document.getElementById('propertyAge').value,
+                propertyDescription: document.getElementById('propertyDescription').value,
+                tenure: document.getElementById('tenure')?.value,
+                estimatedValue: document.getElementById('estimatedValue').value,
+                estimateReason: document.getElementById('estimateReason').value,
+                photos: uploadedPhotos.map(p => ({ 
+                    name: p.name, 
+                    type: p.type, 
+                    data: p.data.split(',')[1] // Strip the data:image/xxx;base64, prefix
+                })),
+                bookingDate: selectedDate,
+                bookingTime: selectedTime,
+                // Include agent details if a valuation was booked
+                userId: agentData?.user?.id || null,
+                branchId: agentData?.branch?.id || null,
+                token: config.token,
+                contactId: config.contactId,
+                listingId: config.listingId,
+                isSales: config.isSales,
+                isLettings: config.isLettings
+            };
+
+            try {
+                const res = await fetch('https://n8n.apex27.co.uk/webhook/e923f5a4-3c8b-491a-ad78-608ac19b9a66?' + buildQueryString(), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                if (res.ok) {
+                    document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+                    document.getElementById('section-success').classList.add('active');
+                    document.querySelectorAll('.progress-step').forEach(s => { s.classList.remove('active'); s.classList.add('completed'); });
+
+                    if (config.allowBooking && formData.bookingDate && formData.bookingTime) {
+                        const dateObj = new Date(formData.bookingDate);
+                        document.getElementById('successMessage').textContent = 'Your valuation has been booked successfully. We look forward to seeing you!';
+                        document.getElementById('successDate').textContent = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                        document.getElementById('successTime').textContent = formData.bookingTime;
+                        document.getElementById('successProperty').textContent = formData.propAddress1 + ', ' + formData.propPostcode;
+                        document.getElementById('successDetails').style.display = 'block';
+                    }
+                } else {
+                    alert('There was an error submitting your request. Please try again.');
+                }
+            } catch (e) {
+                console.error('Submission error:', e);
+                alert('There was an error submitting your request. Please try again.');
+            }
+            showLoading(false);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').classList.toggle('active', show);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            parseUrlParams();
+            if (config.contactId) await fetchContactData();
+            if (config.listingId) await fetchListingData();
+        });
+    </script>
+</body>
+</html>
