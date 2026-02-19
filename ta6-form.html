@@ -1,0 +1,2833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TA6 Property Information Form</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .main-layout {
+            display: flex;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #f8f9fa;
+            border-right: 1px solid #e0e0e0;
+            padding: 20px 0;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+            position: sticky;
+            top: 0;
+        }
+
+        .sidebar-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            font-size: 14px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-item:hover {
+            background: #e8f4f8;
+            color: #2c3e50;
+        }
+
+        .sidebar-item.active {
+            background: #e8f4f8;
+            border-left-color: #3498db;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .sidebar-item .section-number {
+            width: 24px;
+            height: 24px;
+            background: #d0d0d0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .sidebar-item.active .section-number {
+            background: #3498db;
+        }
+
+        .sidebar-item.completed .section-number {
+            background: #2ecc71;
+            font-size: 0;
+        }
+
+        .sidebar-item.completed .section-number::after {
+            content: '✓';
+            font-size: 14px;
+        }
+
+        .content-area {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            height: 8px;
+            position: relative;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #3498db 0%, #2ecc71 100%);
+            height: 100%;
+            transition: width 0.3s ease;
+            width: 0%;
+            box-shadow: 0 1px 3px rgba(52, 152, 219, 0.4);
+        }
+
+        .form-content {
+            padding: 40px;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-title {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .section-description {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .question-group {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .question-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .help-icon {
+            background: #3498db;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: help;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .help-text {
+            display: none;
+            position: absolute;
+            top: 25px;
+            left: 0;
+            background: #333;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: normal;
+            width: 300px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .help-icon:hover .help-text {
+            display: block;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .radio-group, .checkbox-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .radio-option, .checkbox-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .radio-option input[type="radio"],
+        .checkbox-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .textarea-field {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .textarea-field:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .file-upload {
+            margin-top: 10px;
+        }
+
+        .file-upload-label {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #3498db;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .file-upload-label:hover {
+            background: #2980b9;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-list {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .sub-question {
+            margin-left: 20px;
+            margin-top: 15px;
+            padding-left: 15px;
+            border-left: 2px solid #e0e0e0;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .form-content {
+                padding: 20px;
+            }
+
+            .help-text {
+                width: 250px;
+            }
+
+            .main-layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: none;
+                position: relative;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+                padding: 10px 0;
+            }
+
+            .sidebar-item {
+                padding: 10px 15px;
+                font-size: 13px;
+            }
+
+            .sidebar-item .section-number {
+                width: 20px;
+                height: 20px;
+                font-size: 11px;
+            }
+        }
+
+        .completion-screen {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .completion-screen h2 {
+            color: #2c3e50;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .completion-screen .checkmark {
+            width: 80px;
+            height: 80px;
+            background: #4caf50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            font-size: 40px;
+            color: white;
+        }
+
+        .required {
+            color: #e74c3c;
+            margin-left: 4px;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 13px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>TA6 Property Information Form</h1>
+            <p>6th Edition (2025) - Complete all sections accurately</p>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="main-layout">
+            <nav class="sidebar" id="sidebar">
+                <div class="sidebar-item active" data-section="1">
+                    <span class="section-number">1</span>
+                    <span>Property & Seller Details</span>
+                </div>
+                <div class="sidebar-item" data-section="2">
+                    <span class="section-number">2</span>
+                    <span>Boundaries</span>
+                </div>
+                <div class="sidebar-item" data-section="3">
+                    <span class="section-number">3</span>
+                    <span>Disputes</span>
+                </div>
+                <div class="sidebar-item" data-section="4">
+                    <span class="section-number">4</span>
+                    <span>Notices</span>
+                </div>
+                <div class="sidebar-item" data-section="5">
+                    <span class="section-number">5</span>
+                    <span>Alterations</span>
+                </div>
+                <div class="sidebar-item" data-section="6">
+                    <span class="section-number">6</span>
+                    <span>Guarantees & Warranties</span>
+                </div>
+                <div class="sidebar-item" data-section="7">
+                    <span class="section-number">7</span>
+                    <span>Insurance</span>
+                </div>
+                <div class="sidebar-item" data-section="8">
+                    <span class="section-number">8</span>
+                    <span>Environmental Matters</span>
+                </div>
+                <div class="sidebar-item" data-section="9">
+                    <span class="section-number">9</span>
+                    <span>Rights & Arrangements</span>
+                </div>
+                <div class="sidebar-item" data-section="10">
+                    <span class="section-number">10</span>
+                    <span>Parking</span>
+                </div>
+                <div class="sidebar-item" data-section="11">
+                    <span class="section-number">11</span>
+                    <span>Services</span>
+                </div>
+                <div class="sidebar-item" data-section="12">
+                    <span class="section-number">12</span>
+                    <span>Connection to Services</span>
+                </div>
+                <div class="sidebar-item" data-section="13">
+                    <span class="section-number">13</span>
+                    <span>Transaction Information</span>
+                </div>
+                <div class="sidebar-item" data-section="14">
+                    <span class="section-number">14</span>
+                    <span>Completion</span>
+                </div>
+                <div class="sidebar-item" data-section="15">
+                    <span class="section-number">15</span>
+                    <span>Additional Information</span>
+                </div>
+                <div class="sidebar-item" data-section="review">
+                    <span class="section-number">✓</span>
+                    <span>Review & Submit</span>
+                </div>
+            </nav>
+
+            <div class="content-area">
+                <div class="form-content">
+            <form id="ta6Form">
+                <!-- Section 1: Property and Seller Details -->
+                <div class="section active" data-section="1">
+                    <h2 class="section-title">1. Property and Seller Details</h2>
+                    <p class="section-description">Provide basic information about the property and sellers</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            Property Address <span class="required">*</span>
+                            <span class="help-icon">?
+                                <span class="help-text">Enter the complete address of the property being sold</span>
+                            </span>
+                        </div>
+                        <input type="text" class="input-field" name="property_address" required placeholder="Enter full property address">
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="question-group">
+                            <div class="question-label">
+                                Postcode <span class="required">*</span>
+                            </div>
+                            <input type="text" class="input-field" name="postcode" required placeholder="e.g. SW1A 1AA">
+                        </div>
+
+                        <div class="question-group">
+                            <div class="question-label">
+                                UPRN
+                                <span class="help-icon">?
+                                    <span class="help-text">Unique Property Reference Number - you can find this at findmyaddress.co.uk</span>
+                                </span>
+                            </div>
+                            <input type="text" class="input-field" name="uprn" placeholder="Optional">
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            Full Name(s) of Seller(s) <span class="required">*</span>
+                        </div>
+                        <input type="text" class="input-field" name="seller_names" required placeholder="Enter all seller names">
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            What is your role in the sale? <span class="required">*</span>
+                            <span class="help-icon">?
+                                <span class="help-text">Select your capacity as seller - most commonly this will be "Seller(s)"</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="seller_role" value="seller" required>
+                                Seller(s)
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="seller_role" value="executor">
+                                Executor(s)/Administrator(s)
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="seller_role" value="attorney">
+                                Attorney(s)
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="seller_role" value="trustee">
+                                Trustee(s)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            When did you become owner or get authority to sell? <span class="required">*</span>
+                        </div>
+                        <input type="date" class="input-field" name="ownership_date" required>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            Seller's Solicitor Details
+                        </div>
+                        <input type="text" class="input-field" name="solicitor_firm" placeholder="Firm name" style="margin-bottom: 10px;">
+                        <input type="text" class="input-field" name="solicitor_contact" placeholder="Contact name" style="margin-bottom: 10px;">
+                        <input type="email" class="input-field" name="solicitor_email" placeholder="Email address" style="margin-bottom: 10px;">
+                        <input type="text" class="input-field" name="solicitor_reference" placeholder="Reference number">
+                    </div>
+                </div>
+
+                <!-- Section 2: Boundaries -->
+                <div class="section" data-section="2">
+                    <h2 class="section-title">2. Boundaries</h2>
+                    <p class="section-description">Information about property boundaries and responsibility for maintenance</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            2.1 Looking towards the property from the road, who owns or accepts responsibility to maintain or repair the boundary features?
+                            <span class="help-icon">?
+                                <span class="help-text">Boundaries may include walls, fences, hedges, or ditches. If uncertain, select "Not known"</span>
+                            </span>
+                        </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <strong>(a) On the left:</strong>
+                            <div class="radio-group" style="margin-top: 8px;">
+                                <label class="radio-option"><input type="radio" name="boundary_left" value="seller"> Seller</label>
+                                <label class="radio-option"><input type="radio" name="boundary_left" value="neighbour"> Neighbour</label>
+                                <label class="radio-option"><input type="radio" name="boundary_left" value="shared"> Shared</label>
+                                <label class="radio-option"><input type="radio" name="boundary_left" value="not_known"> Not known</label>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <strong>(b) On the right:</strong>
+                            <div class="radio-group" style="margin-top: 8px;">
+                                <label class="radio-option"><input type="radio" name="boundary_right" value="seller"> Seller</label>
+                                <label class="radio-option"><input type="radio" name="boundary_right" value="neighbour"> Neighbour</label>
+                                <label class="radio-option"><input type="radio" name="boundary_right" value="shared"> Shared</label>
+                                <label class="radio-option"><input type="radio" name="boundary_right" value="not_known"> Not known</label>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <strong>(c) At the rear:</strong>
+                            <div class="radio-group" style="margin-top: 8px;">
+                                <label class="radio-option"><input type="radio" name="boundary_rear" value="seller"> Seller</label>
+                                <label class="radio-option"><input type="radio" name="boundary_rear" value="neighbour"> Neighbour</label>
+                                <label class="radio-option"><input type="radio" name="boundary_rear" value="shared"> Shared</label>
+                                <label class="radio-option"><input type="radio" name="boundary_rear" value="not_known"> Not known</label>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <strong>(d) At the front:</strong>
+                            <div class="radio-group" style="margin-top: 8px;">
+                                <label class="radio-option"><input type="radio" name="boundary_front" value="seller"> Seller</label>
+                                <label class="radio-option"><input type="radio" name="boundary_front" value="neighbour"> Neighbour</label>
+                                <label class="radio-option"><input type="radio" name="boundary_front" value="shared"> Shared</label>
+                                <label class="radio-option"><input type="radio" name="boundary_front" value="not_known"> Not known</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            2.2 If boundaries are irregular, provide description or reference to a plan
+                            <span class="help-icon">?
+                                <span class="help-text">Irregular boundaries don't follow straight lines - for example, if they follow natural features like streams or have unusual angles</span>
+                            </span>
+                        </div>
+                        <textarea class="textarea-field" name="boundary_irregular" placeholder="Describe irregular boundaries or indicate plan attached"></textarea>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            2.3 Are you aware of any boundary features being moved, land added, or neighbours building on your property?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="boundary_changes" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="boundary_changes" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="boundaryChangesDetails" style="display: none;">
+                            <textarea class="textarea-field" name="boundary_changes_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            2.4 Does any part of the property overhang or project under the boundary?
+                            <span class="help-icon">?
+                                <span class="help-text">Examples include cellars under pavements, overhanging eaves, or covered walkways extending beyond your boundary</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="boundary_overhang" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="boundary_overhang" value="no"> No</label>
+                            <label class="radio-option"><input type="radio" name="boundary_overhang" value="not_known"> Not known</label>
+                        </div>
+                        <div class="sub-question" id="boundaryOverhangDetails" style="display: none;">
+                            <textarea class="textarea-field" name="boundary_overhang_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            2.5 Are you aware of any Party Wall Act 1996 notices regarding shared walls or boundaries?
+                            <span class="help-icon">?
+                                <span class="help-text">The Party Wall Act requires notices for building work affecting shared boundaries. You would have sent or received written notification</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="party_wall" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="party_wall" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="partyWallDetails" style="display: none;">
+                            <textarea class="textarea-field" name="party_wall_details" placeholder="Provide details of any works carried out or agreed"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Disputes -->
+                <div class="section" data-section="3">
+                    <h2 class="section-title">3. Disputes</h2>
+                    <p class="section-description">Information about any disputes or potential issues</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            3.1 Are you aware of any disputes or complaints about the property or nearby properties?
+                            <span class="help-icon">?
+                                <span class="help-text">This includes past or current disputes with neighbors about noise, boundaries, access, or any other matters</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="disputes_current" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="disputes_current" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="disputesCurrentDetails" style="display: none;">
+                            <textarea class="textarea-field" name="disputes_current_details" placeholder="Provide details including when this occurred and who was involved"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            3.2 Are you aware of anything that might lead to a dispute?
+                            <span class="help-icon">?
+                                <span class="help-text">Include any concerns or ongoing issues, even if nothing formal has been raised yet</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="disputes_potential" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="disputes_potential" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="disputesPotentialDetails" style="display: none;">
+                            <textarea class="textarea-field" name="disputes_potential_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Notices -->
+                <div class="section" data-section="4">
+                    <h2 class="section-title">4. Notices</h2>
+                    <p class="section-description">Information about any official notices or development plans</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            4.1 Are you aware of any notices, communications, or discussions affecting the property or nearby?
+                            <span class="help-icon">?
+                                <span class="help-text">This includes formal notices from neighbors, council, government departments, or other official bodies</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="notices" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="notices" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="noticesDetails" style="display: none;">
+                            <textarea class="textarea-field" name="notices_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            4.2 Are you aware of any plans to develop property or land nearby?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="development_plans" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="development_plans" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="developmentPlansDetails" style="display: none;">
+                            <textarea class="textarea-field" name="development_plans_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            4.3 Are you aware of proposals to alter or change the use of buildings nearby?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="building_changes" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="building_changes" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="buildingChangesDetails" style="display: none;">
+                            <textarea class="textarea-field" name="building_changes_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 5: Alterations -->
+                <div class="section" data-section="5">
+                    <h2 class="section-title">5. Alterations</h2>
+                    <p class="section-description">Details of any building work, extensions, or modifications</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            5.1 Are you aware of any of the following alterations to the property?
+                            <span class="help-icon">?
+                                <span class="help-text">Select all alterations that apply. Many of these require planning permission or building regulations approval</span>
+                            </span>
+                        </div>
+                        
+                        <div class="checkbox-group" style="flex-direction: column;">
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="alterations" value="windows">
+                                Replacement windows, roof windows, roof lights, glazed doors (since April 2002)
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="alterations" value="extension">
+                                Extension
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="alterations" value="conservatory">
+                                Conservatory
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="alterations" value="loft_conversion">
+                                Loft conversion
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="alterations" value="garage_conversion">
+                                Garage conversion
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="alterations" value="wall_removal">
+                                Removal of internal walls
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="alterations" value="chimney_removal">
+                                Removal of chimney breast
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="alterations" value="insulation">
+                                Insulation
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="alterations" value="other_building">
+                                Other building works or changes
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="question-group" id="alterationsDetails" style="display: none;">
+                        <div class="question-label">
+                            5.2(a) Details of work and date carried out
+                        </div>
+                        <textarea class="textarea-field" name="alterations_work_details" placeholder="Describe the work and when it was completed"></textarea>
+
+                        <div style="margin-top: 20px;">
+                            <div class="question-label">5.2(b) Has all work been completed?</div>
+                            <div class="radio-group">
+                                <label class="radio-option"><input type="radio" name="alterations_completed" value="yes"> Yes</label>
+                                <label class="radio-option"><input type="radio" name="alterations_completed" value="no"> No</label>
+                            </div>
+                            <div class="sub-question" id="alterationsIncompleteDetails" style="display: none; margin-top: 10px;">
+                                <textarea class="textarea-field" name="alterations_incomplete_details" placeholder="What remains to be completed?"></textarea>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 20px;">
+                            <div class="question-label">
+                                5.2(d) Did you obtain necessary permissions and certificates?
+                                <span class="help-icon">?
+                                    <span class="help-text">This includes planning permissions, building regulations approvals, and competent person certificates</span>
+                                </span>
+                            </div>
+                            <div class="radio-group">
+                                <label class="radio-option"><input type="radio" name="alterations_permissions" value="yes"> Yes</label>
+                                <label class="radio-option"><input type="radio" name="alterations_permissions" value="no"> No</label>
+                            </div>
+                            <div class="sub-question" id="alterationsNoPermissionsReason" style="display: none; margin-top: 10px;">
+                                <textarea class="textarea-field" name="alterations_no_permissions_reason" placeholder="Explain why permissions were not required"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            5.3 Is any part of the property used exclusively for non-residential purposes?
+                            <span class="help-icon">?
+                                <span class="help-text">This means significant business use beyond a home office - for example, running a shop or workshop from the property</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="non_residential_use" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="non_residential_use" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="nonResidentialDetails" style="display: none;">
+                            <textarea class="textarea-field" name="non_residential_details" placeholder="Provide details and mention any planning permission"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            5.4 Are you aware of any breaches of planning or building control, unfinished work, or work without necessary consents?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="planning_breaches" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="planning_breaches" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="planningBreachesDetails" style="display: none;">
+                            <textarea class="textarea-field" name="planning_breaches_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            5.7 Is the property (or any part) a listed building?
+                            <span class="help-icon">?
+                                <span class="help-text">Listed buildings have special architectural or historic interest and are subject to stricter planning controls</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="listed_building" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="listed_building" value="no"> No</label>
+                            <label class="radio-option"><input type="radio" name="listed_building" value="not_known"> Not known</label>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            5.8 Is the property in a conservation area?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="conservation_area" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="conservation_area" value="no"> No</label>
+                            <label class="radio-option"><input type="radio" name="conservation_area" value="not_known"> Not known</label>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            5.9 Are any trees on or overhanging the property subject to a tree preservation order?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="tree_preservation" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="tree_preservation" value="no"> No</label>
+                            <label class="radio-option"><input type="radio" name="tree_preservation" value="not_known"> Not known</label>
+                        </div>
+                        <div class="sub-question" id="treePreservationDetails" style="display: none;">
+                            <div style="margin-bottom: 10px;">
+                                <strong>Were any works carried out on these trees?</strong>
+                                <div class="radio-group" style="margin-top: 8px;">
+                                    <label class="radio-option"><input type="radio" name="tree_works" value="yes"> Yes</label>
+                                    <label class="radio-option"><input type="radio" name="tree_works" value="no"> No</label>
+                                </div>
+                            </div>
+                            <textarea class="textarea-field" name="tree_preservation_work_details" placeholder="Provide details of works and relevant documents"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 6: Guarantees and Warranties -->
+                <div class="section" data-section="6">
+                    <h2 class="section-title">6. Guarantees and Warranties</h2>
+                    <p class="section-description">Information about unexpired guarantees or warranties</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            6.1 Does the property have any unexpired guarantees or warranties?
+                            <span class="help-icon">?
+                                <span class="help-text">Check documents from when you purchased the property, receipts for work, or contact companies who carried out installations</span>
+                            </span>
+                        </div>
+                        
+                        <div class="checkbox-group" style="flex-direction: column;">
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="warranties" value="new_home">
+                                New home warranty (e.g. NHBC)
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="warranties" value="damp_proofing">
+                                Damp proofing
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="warranties" value="timber_treatment">
+                                Timber treatment
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="warranties" value="windows">
+                                Windows, roof lights, or glazed doors
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="warranties" value="roofing">
+                                Roofing
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="warranties" value="boiler">
+                                Boiler or heating systems
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="warranties" value="underpinning">
+                                Underpinning
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="warranties" value="insulation">
+                                Insulation
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="warranties" value="other">
+                                Other
+                            </label>
+                        </div>
+                        <div class="sub-question" id="warrantyOtherDetails" style="display: none; margin-top: 10px;">
+                            <input type="text" class="input-field" name="warranty_other_type" placeholder="Please specify other warranty type">
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            6.2 Are you aware of any claims under these guarantees or warranties?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="warranty_claims" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="warranty_claims" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="warrantyClaimsDetails" style="display: none;">
+                            <textarea class="textarea-field" name="warranty_claims_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            6.3 Are you aware of anything that may breach the terms of these guarantees or warranties?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="warranty_breaches" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="warranty_breaches" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="warrantyBreachesDetails" style="display: none;">
+                            <textarea class="textarea-field" name="warranty_breaches_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 7: Insurance -->
+                <div class="section" data-section="7">
+                    <h2 class="section-title">7. Insurance</h2>
+                    <p class="section-description">Information about property insurance</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            7.1 Do you insure the property?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="insurance_holder" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="insurance_holder" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="insuranceOtherHolder" style="display: none;">
+                            <input type="text" class="input-field" name="insurance_other_holder" placeholder="Who insures the property?">
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            7.2 Has property insurance ever been difficult to obtain or subject to special conditions?
+                            <span class="help-icon">?
+                                <span class="help-text">This includes high premiums, unusual exclusions, or requirements for specific security measures</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="insurance_difficulties" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="insurance_difficulties" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="insuranceDifficultiesDetails" style="display: none;">
+                            <textarea class="textarea-field" name="insurance_difficulties_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            7.3 Have you made any buildings insurance claims?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="insurance_claims" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="insurance_claims" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="insuranceClaimsDetails" style="display: none;">
+                            <textarea class="textarea-field" name="insurance_claims_details" placeholder="Provide details including dates and how claims were resolved"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 8: Environmental Matters -->
+                <div class="section" data-section="8">
+                    <h2 class="section-title">8. Environmental Matters</h2>
+                    <p class="section-description">Information about flooding, radon, and other environmental issues</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            8.1 Has the property or any part of it ever been flooded?
+                            <span class="help-icon">?
+                                <span class="help-text">Flooding means any case where land not normally covered by water becomes covered by water</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="flooding" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="flooding" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="floodingDetails" style="display: none;">
+                            <div style="margin-bottom: 15px;">
+                                <strong>Type of flooding:</strong>
+                                <div class="checkbox-group" style="flex-direction: column; margin-top: 8px;">
+                                    <label class="checkbox-option"><input type="checkbox" name="flooding_type" value="groundwater"> Groundwater</label>
+                                    <label class="checkbox-option"><input type="checkbox" name="flooding_type" value="sewer"> Sewer flooding</label>
+                                    <label class="checkbox-option"><input type="checkbox" name="flooding_type" value="surface_water"> Surface water</label>
+                                    <label class="checkbox-option"><input type="checkbox" name="flooding_type" value="coastal"> Coastal flooding</label>
+                                    <label class="checkbox-option"><input type="checkbox" name="flooding_type" value="river"> River flooding</label>
+                                    <label class="checkbox-option"><input type="checkbox" name="flooding_type" value="other"> Other</label>
+                                </div>
+                            </div>
+                            <textarea class="textarea-field" name="flooding_details" placeholder="Provide details about dates and which parts flooded"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            8.2 Are you aware of any flood defences installed at the property?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="flood_defences" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="flood_defences" value="no"> No</label>
+                            <label class="radio-option"><input type="radio" name="flood_defences" value="not_known"> Not known</label>
+                        </div>
+                        <div class="sub-question" id="floodDefencesDetails" style="display: none;">
+                            <textarea class="textarea-field" name="flood_defences_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            8.6 Is the property affected by Japanese knotweed?
+                            <span class="help-icon">?
+                                <span class="help-text">Japanese knotweed can damage buildings. Properties are usually at risk if it's growing within 3 meters of the boundary</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="japanese_knotweed" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="japanese_knotweed" value="no"> No</label>
+                            <label class="radio-option"><input type="radio" name="japanese_knotweed" value="not_known"> Not known</label>
+                        </div>
+                        <div class="sub-question" id="japaneseKnotweedDetails" style="display: none;">
+                            <div style="margin-bottom: 10px;">
+                                <strong>Is there a management plan in place?</strong>
+                                <div class="radio-group" style="margin-top: 8px;">
+                                    <label class="radio-option"><input type="radio" name="knotweed_plan" value="yes"> Yes</label>
+                                    <label class="radio-option"><input type="radio" name="knotweed_plan" value="no"> No</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 9: Rights and Arrangements -->
+                <div class="section" data-section="9">
+                    <h2 class="section-title">9. Rights and Informal Arrangements</h2>
+                    <p class="section-description">Information about rights over other properties and shared facilities</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            9.1 Do you exercise any rights or arrangements over other properties?
+                            <span class="help-icon">?
+                                <span class="help-text">Examples include rights of way, shared driveways, or access through neighboring land</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="rights_exercised" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="rights_exercised" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="rightsExercisedDetails" style="display: none;">
+                            <textarea class="textarea-field" name="rights_exercised_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            9.2 Have you been asked to contribute towards jointly used facilities?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="contribution_asked" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="contribution_asked" value="no"> No</label>
+                            <label class="radio-option"><input type="radio" name="contribution_asked" value="not_applicable"> Not applicable</label>
+                        </div>
+                        <div class="sub-question" id="contributionDetails" style="display: none;">
+                            <textarea class="textarea-field" name="contribution_details" placeholder="Details of how much, how often, and who you pay"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            9.4 Do owners of other properties exercise any rights over your property?
+                            <span class="help-icon">?
+                                <span class="help-text">For example, neighbors having rights to cross your land or use shared facilities on your property</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="rights_by_others" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="rights_by_others" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="rightsByOthersDetails" style="display: none;">
+                            <textarea class="textarea-field" name="rights_by_others_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            9.7 Are you aware of drains, pipes, or wires serving your property that cross other property?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="services_crossing_out" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="services_crossing_out" value="no"> No</label>
+                            <label class="radio-option"><input type="radio" name="services_crossing_out" value="not_known"> Not known</label>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            9.8 Are you aware of drains, pipes, or wires from other properties that cross your property?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="services_crossing_in" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="services_crossing_in" value="no"> No</label>
+                            <label class="radio-option"><input type="radio" name="services_crossing_in" value="not_known"> Not known</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 10: Parking -->
+                <div class="section" data-section="10">
+                    <h2 class="section-title">10. Parking</h2>
+                    <p class="section-description">Information about parking arrangements</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            10.1 What are the parking arrangements?
+                        </div>
+                        <textarea class="textarea-field" name="parking_arrangements" placeholder="Describe parking facilities (e.g., garage, driveway, on-street parking)"></textarea>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            10.2 Is a permit required for on-road parking?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="parking_permit" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="parking_permit" value="no"> No</label>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            10.3 Does the property have an electric vehicle charging point?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="ev_charger" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="ev_charger" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="evChargerDetails" style="display: none;">
+                            <textarea class="textarea-field" name="ev_charger_details" placeholder="Specify type, connector, location, and whether cable crosses public pavement" style="margin-bottom: 10px;"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 11: Services -->
+                <div class="section" data-section="11">
+                    <h2 class="section-title">11. Services</h2>
+                    <p class="section-description">Information about electrical, heating, and drainage systems</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            11.1 Are you aware of any electrical installation works at the property?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="electrical_works" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="electrical_works" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="electricalWorksDetails" style="display: none;">
+                            <textarea class="textarea-field" name="electrical_works_details" placeholder="Provide details including when work took place"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            11.4 How is the property heated?
+                            <span class="help-icon">?
+                                <span class="help-text">Select all heating types that apply to your property</span>
+                            </span>
+                        </div>
+                        <div class="checkbox-group" style="flex-direction: column;">
+                            <label class="checkbox-option"><input type="checkbox" name="heating_type" value="mains_gas"> Mains gas</label>
+                            <label class="checkbox-option"><input type="checkbox" name="heating_type" value="oil"> Oil</label>
+                            <label class="checkbox-option"><input type="checkbox" name="heating_type" value="heat_pumps"> Heat pumps</label>
+                            <label class="checkbox-option"><input type="checkbox" name="heating_type" value="liquid_gas"> Liquid gas</label>
+                            <label class="checkbox-option"><input type="checkbox" name="heating_type" value="electricity"> Electricity</label>
+                            <label class="checkbox-option"><input type="checkbox" name="heating_type" value="underfloor"> Underfloor</label>
+                            <label class="checkbox-option"><input type="checkbox" name="heating_type" value="wood_stove"> Woodburning/multi-fuel stove</label>
+                            <label class="checkbox-option"><input type="checkbox" name="heating_type" value="other"> Other</label>
+                        </div>
+                        <div class="sub-question" id="heatingOtherDetails" style="display: none; margin-top: 10px;">
+                            <input type="text" class="input-field" name="heating_other_type" placeholder="Please specify">
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            Heating System Details
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #555;">
+                                When was the heating system installed?
+                                <span class="help-icon">?
+                                    <span class="help-text">This refers to when the overall heating system (radiators, pipes, underfloor heating, etc.) was installed - usually when the house was built or during a major renovation</span>
+                                </span>
+                            </label>
+                            <input type="date" class="input-field" name="heating_installation_date" placeholder="Heating system installation date">
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #555;">
+                                When was the boiler installed?
+                                <span class="help-icon">?
+                                    <span class="help-text">This is when the boiler unit itself was installed or last replaced. Boilers are typically replaced every 10-15 years, even if the heating system remains the same</span>
+                                </span>
+                            </label>
+                            <input type="date" class="input-field" name="boiler_installation_date" placeholder="Boiler installation date">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #555;">
+                                Year of last service/maintenance
+                            </label>
+                            <input type="text" class="input-field" name="heating_last_service_year" placeholder="e.g., 2024">
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            11.5 Is the property connected to mains drainage?
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong>(a) Foul water drainage:</strong>
+                            <div class="radio-group" style="margin-top: 8px;">
+                                <label class="radio-option"><input type="radio" name="mains_foul_water" value="yes"> Yes</label>
+                                <label class="radio-option"><input type="radio" name="mains_foul_water" value="no"> No</label>
+                                <label class="radio-option"><input type="radio" name="mains_foul_water" value="not_known"> Not known</label>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong>(b) Surface water drainage:</strong>
+                            <div class="radio-group" style="margin-top: 8px;">
+                                <label class="radio-option"><input type="radio" name="mains_surface_water" value="yes"> Yes</label>
+                                <label class="radio-option"><input type="radio" name="mains_surface_water" value="no"> No</label>
+                                <label class="radio-option"><input type="radio" name="mains_surface_water" value="not_known"> Not known</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            11.6 Is sewerage provided by any of the following?
+                            <span class="help-icon">?
+                                <span class="help-text">Private sewerage systems are used when property is not connected to mains sewerage</span>
+                            </span>
+                        </div>
+                        <div class="checkbox-group" style="flex-direction: column;">
+                            <label class="checkbox-option"><input type="checkbox" name="private_sewerage" value="septic_tank"> Septic tank</label>
+                            <label class="checkbox-option"><input type="checkbox" name="private_sewerage" value="treatment_plant"> Sewage treatment plant</label>
+                            <label class="checkbox-option"><input type="checkbox" name="private_sewerage" value="cesspool"> Cesspool</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 12: Connection to Services -->
+                <div class="section" data-section="12">
+                    <h2 class="section-title">12. Connection to Services</h2>
+                    <p class="section-description">Details of utility connections and providers</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            Mains Electricity
+                        </div>
+                        <div class="radio-group" style="margin-bottom: 10px;">
+                            <label class="radio-option"><input type="radio" name="has_electricity" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="has_electricity" value="no"> No</label>
+                        </div>
+                        <div id="electricityDetails" style="display: none;">
+                            <input type="text" class="input-field" name="electricity_provider" placeholder="Provider name" style="margin-bottom: 10px;">
+                            <input type="text" class="input-field" name="electricity_meter_location" placeholder="Meter location" style="margin-bottom: 10px;">
+                            <input type="text" class="input-field" name="electricity_mpan" placeholder="MPAN number">
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            Mains Gas
+                        </div>
+                        <div class="radio-group" style="margin-bottom: 10px;">
+                            <label class="radio-option"><input type="radio" name="has_gas" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="has_gas" value="no"> No</label>
+                        </div>
+                        <div id="gasDetails" style="display: none;">
+                            <input type="text" class="input-field" name="gas_provider" placeholder="Provider name" style="margin-bottom: 10px;">
+                            <input type="text" class="input-field" name="gas_meter_location" placeholder="Meter location" style="margin-bottom: 10px;">
+                            <input type="text" class="input-field" name="gas_mprn" placeholder="MPRN number">
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            Mains Water
+                        </div>
+                        <div class="radio-group" style="margin-bottom: 10px;">
+                            <label class="radio-option"><input type="radio" name="has_water" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="has_water" value="no"> No</label>
+                        </div>
+                        <div id="waterDetails" style="display: none;">
+                            <input type="text" class="input-field" name="water_provider" placeholder="Provider name" style="margin-bottom: 10px;">
+                            <input type="text" class="input-field" name="water_stopcock_location" placeholder="Stopcock location">
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            Broadband
+                        </div>
+                        <div class="radio-group" style="margin-bottom: 10px;">
+                            <label class="radio-option"><input type="radio" name="has_broadband" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="has_broadband" value="no"> No</label>
+                        </div>
+                        <div id="broadbandDetails" style="display: none;">
+                            <input type="text" class="input-field" name="broadband_provider" placeholder="Provider name">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 13: Transaction Information -->
+                <div class="section" data-section="13">
+                    <h2 class="section-title">13. Transaction Information</h2>
+                    <p class="section-description">Details about the sale and occupancy</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            13.1 Does this sale depend on you completing purchase of another property on the same day?
+                            <span class="help-icon">?
+                                <span class="help-text">This creates a chain of transactions that must complete together</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="chain_dependent" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="chain_dependent" value="no"> No</label>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            13.2 Do you have special requirements about a moving date?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="special_date_requirements" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="special_date_requirements" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="specialDateDetails" style="display: none;">
+                            <textarea class="textarea-field" name="special_date_details" placeholder="Please provide details"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            13.3 Do you live at the property?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="seller_occupies" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="seller_occupies" value="no"> No</label>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            13.4 Does anyone else aged 17 or over live at the property?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="other_occupiers" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="other_occupiers" value="no"> No</label>
+                        </div>
+                        <div class="sub-question" id="otherOccupiersDetails" style="display: none;">
+                            <textarea class="textarea-field" name="other_occupiers_names" placeholder="Full names of occupiers aged 17 or over" style="margin-bottom: 10px;"></textarea>
+                            <div>
+                                <strong>Are any of these occupiers tenants or lodgers?</strong>
+                                <div class="radio-group" style="margin-top: 8px;">
+                                    <label class="radio-option"><input type="radio" name="has_tenants" value="yes"> Yes</label>
+                                    <label class="radio-option"><input type="radio" name="has_tenants" value="no"> No</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            13.5 Is the property being sold with vacant possession?
+                            <span class="help-icon">?
+                                <span class="help-text">Vacant possession means completely empty with no occupiers, rubbish, or contents not included in the sale</span>
+                            </span>
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="vacant_possession" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="vacant_possession" value="no"> No</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 14: Completion -->
+                <div class="section" data-section="14">
+                    <h2 class="section-title">14. Completion</h2>
+                    <p class="section-description">Final details about completion arrangements</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            14.1 Will the sale price be sufficient to pay off all mortgages and charges on completion?
+                        </div>
+                        <div class="radio-group">
+                            <label class="radio-option"><input type="radio" name="sufficient_for_mortgage" value="yes"> Yes</label>
+                            <label class="radio-option"><input type="radio" name="sufficient_for_mortgage" value="no"> No</label>
+                            <label class="radio-option"><input type="radio" name="sufficient_for_mortgage" value="no_mortgage"> No mortgage</label>
+                        </div>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            14.2 Will you ensure that before or on completion:
+                        </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <strong>(a) All rubbish is removed and property left clean and tidy?</strong>
+                            <div class="radio-group" style="margin-top: 8px;">
+                                <label class="radio-option"><input type="radio" name="completion_clean" value="yes"> Yes</label>
+                                <label class="radio-option"><input type="radio" name="completion_clean" value="no"> No</label>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <strong>(b) If light fittings removed, they'll be replaced with ceiling rose, flex, and bulb?</strong>
+                            <div class="radio-group" style="margin-top: 8px;">
+                                <label class="radio-option"><input type="radio" name="completion_lights" value="yes"> Yes</label>
+                                <label class="radio-option"><input type="radio" name="completion_lights" value="no"> No</label>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <strong>(c) Reasonable care taken when removing fittings or contents?</strong>
+                            <div class="radio-group" style="margin-top: 8px;">
+                                <label class="radio-option"><input type="radio" name="completion_care" value="yes"> Yes</label>
+                                <label class="radio-option"><input type="radio" name="completion_care" value="no"> No</label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <strong>(d) Keys and alarm codes left at property or with estate agent?</strong>
+                            <div class="radio-group" style="margin-top: 8px;">
+                                <label class="radio-option"><input type="radio" name="completion_keys" value="yes"> Yes</label>
+                                <label class="radio-option"><input type="radio" name="completion_keys" value="no"> No</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 15: Additional Information -->
+                <div class="section" data-section="15">
+                    <h2 class="section-title">15. Additional Information</h2>
+                    <p class="section-description">Any further information or documents</p>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            15.2 Any further information about your answers?
+                        </div>
+                        <textarea class="textarea-field" name="additional_information" placeholder="Provide any additional details or clarifications" rows="6"></textarea>
+                    </div>
+
+                    <div class="question-group">
+                        <div class="question-label">
+                            Seller Signature and Date
+                        </div>
+                        <input type="text" class="input-field" name="seller_signature_name" placeholder="Your full name" style="margin-bottom: 10px;">
+                        <input type="date" class="input-field" name="signature_date" placeholder="Date signed">
+                    </div>
+                </div>
+
+                <!-- Review Section -->
+                <div class="section" data-section="review">
+                    <h2 class="section-title">Review Your Answers</h2>
+                    <p class="section-description">Please review all information before submitting</p>
+                    
+                    <div id="reviewContent" class="question-group">
+                        <!-- Review content will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" class="btn btn-secondary" id="prevBtn" style="display: none;">Previous</button>
+                    <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+                </div>
+            </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSection = 1;
+        const totalSections = 15; // Plus review section
+        const form = document.getElementById('ta6Form');
+        const sections = document.querySelectorAll('.section');
+        const nextBtn = document.getElementById('nextBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const progressFill = document.getElementById('progressFill');
+        const sidebarItems = document.querySelectorAll('.sidebar-item');
+
+        // Get query parameters from URL
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Load existing form data on page load
+        async function loadExistingData() {
+            // Only call webhook if there are query parameters
+            if (urlParams.toString()) {
+                try {
+                    const loadUrl = 'https://n8n.apex27.co.uk/webhook/f5435355-3795-4e6e-9ff2-cecdd061f20d?' + urlParams.toString();
+                    
+                    const response = await fetch(loadUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({})
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        populateFormWithData(data);
+                    }
+                } catch (error) {
+                    console.error('Error loading form data:', error);
+                    // Continue with empty form if load fails
+                }
+            }
+        }
+
+        // Populate form fields with loaded data
+        function populateFormWithData(data) {
+            for (let [key, value] of Object.entries(data)) {
+                // Skip null or undefined values
+                if (value === null || value === undefined) continue;
+                
+                // Handle JSON string arrays (e.g., "[\"value1\",\"value2\"]")
+                if (typeof value === 'string' && value.startsWith('[') && value.endsWith(']')) {
+                    try {
+                        value = JSON.parse(value);
+                    } catch (e) {
+                        // If parsing fails, treat as regular string
+                    }
+                }
+                
+                // Handle checkbox groups (arrays)
+                if (Array.isArray(value)) {
+                    value.forEach(val => {
+                        const checkbox = form.querySelector(`input[name="${key}"][value="${val}"]`);
+                        if (checkbox && checkbox.type === 'checkbox') {
+                            checkbox.checked = true;
+                            // Trigger change event for conditional fields
+                            checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    });
+                } else {
+                    // Handle regular inputs, textareas, and selects
+                    const inputs = form.querySelectorAll(`[name="${key}"]`);
+                    
+                    if (inputs.length > 0) {
+                        const input = inputs[0];
+                        
+                        if (input.type === 'radio') {
+                            const radio = form.querySelector(`input[name="${key}"][value="${value}"]`);
+                            if (radio) {
+                                radio.checked = true;
+                                // Trigger change event for conditional fields
+                                radio.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                        } else if (input.type === 'checkbox') {
+                            input.checked = value === 'true' || value === true || value === 'yes';
+                            // Trigger change event for conditional fields
+                            input.dispatchEvent(new Event('change', { bubbles: true }));
+                        } else {
+                            input.value = value;
+                            // Trigger input event for text fields
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    }
+                }
+            }
+            
+            // Update sidebar to reflect populated data
+            setTimeout(() => {
+                updateSidebar();
+            }, 100);
+        }
+
+        // Sidebar navigation
+        sidebarItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const sectionId = item.getAttribute('data-section');
+                if (sectionId === 'review') {
+                    currentSection = totalSections + 1;
+                } else {
+                    currentSection = parseInt(sectionId);
+                }
+                showSection(currentSection);
+            });
+        });
+
+        // Track which sections have been visited
+        const visitedSections = new Set();
+
+        // Check if a section has all required fields filled
+        function isSectionComplete(sectionNum) {
+            if (sectionNum > totalSections) return false; // Review section
+            
+            const section = sections[sectionNum - 1];
+            if (!section) return false;
+            
+            const requiredInputs = section.querySelectorAll('input[required], select[required], textarea[required]');
+            
+            // If section has required fields, check if they're all filled
+            if (requiredInputs.length > 0) {
+                // Track which radio groups we've already checked
+                const checkedRadioGroups = new Set();
+                
+                for (let input of requiredInputs) {
+                    if (input.type === 'radio') {
+                        const name = input.name;
+                        // Skip if we've already checked this radio group
+                        if (checkedRadioGroups.has(name)) continue;
+                        
+                        checkedRadioGroups.add(name);
+                        const group = section.querySelectorAll(`input[name="${name}"]`);
+                        const isChecked = Array.from(group).some(item => item.checked);
+                        if (!isChecked) return false;
+                    } else if (input.type === 'checkbox') {
+                        // For individual required checkboxes (not common in this form)
+                        if (!input.checked) return false;
+                    } else {
+                        // Text inputs, textareas, selects
+                        if (!input.value || !input.value.trim()) return false;
+                    }
+                }
+                return true;
+            }
+            
+            // For sections without required fields, check if any field has been filled
+            const allInputs = section.querySelectorAll('input, select, textarea');
+            for (let input of allInputs) {
+                if (input.type === 'radio' || input.type === 'checkbox') {
+                    if (input.checked) return true;
+                } else if (input.type !== 'hidden') {
+                    if (input.value && input.value.trim()) return true;
+                }
+            }
+            
+            return false;
+        }
+
+        // Update sidebar active state
+        function updateSidebar() {
+            sidebarItems.forEach(item => {
+                const sectionId = item.getAttribute('data-section');
+                const itemSectionNum = sectionId === 'review' ? totalSections + 1 : parseInt(sectionId);
+                
+                if (itemSectionNum === currentSection) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+
+                // Mark sections as completed only if all required fields are filled
+                if (sectionId !== 'review' && isSectionComplete(itemSectionNum)) {
+                    item.classList.add('completed');
+                } else if (sectionId !== 'review') {
+                    item.classList.remove('completed');
+                }
+            });
+        }
+
+        // Show/hide conditional fields
+        function setupConditionalFields() {
+            // Boundary changes
+            document.querySelectorAll('input[name="boundary_changes"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('boundaryChangesDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Boundary overhang
+            document.querySelectorAll('input[name="boundary_overhang"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('boundaryOverhangDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Party wall
+            document.querySelectorAll('input[name="party_wall"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('partyWallDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Disputes
+            document.querySelectorAll('input[name="disputes_current"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('disputesCurrentDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="disputes_potential"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('disputesPotentialDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Notices
+            document.querySelectorAll('input[name="notices"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('noticesDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="development_plans"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('developmentPlansDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="building_changes"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('buildingChangesDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Alterations
+            document.querySelectorAll('input[name="alterations"]').forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    const anyChecked = document.querySelectorAll('input[name="alterations"]:checked').length > 0;
+                    document.getElementById('alterationsDetails').style.display = 
+                        anyChecked ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="alterations_completed"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('alterationsIncompleteDetails').style.display = 
+                        e.target.value === 'no' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="alterations_permissions"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('alterationsNoPermissionsReason').style.display = 
+                        e.target.value === 'no' ? 'block' : 'none';
+                });
+            });
+
+            // Non-residential use
+            document.querySelectorAll('input[name="non_residential_use"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('nonResidentialDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Planning breaches
+            document.querySelectorAll('input[name="planning_breaches"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('planningBreachesDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Tree preservation
+            document.querySelectorAll('input[name="tree_preservation"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('treePreservationDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Warranties
+            document.querySelectorAll('input[name="warranties"]').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.value === 'other') {
+                        document.getElementById('warrantyOtherDetails').style.display = 
+                            e.target.checked ? 'block' : 'none';
+                    }
+                });
+            });
+
+            document.querySelectorAll('input[name="warranty_claims"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('warrantyClaimsDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="warranty_breaches"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('warrantyBreachesDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Insurance
+            document.querySelectorAll('input[name="insurance_holder"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('insuranceOtherHolder').style.display = 
+                        e.target.value === 'no' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="insurance_difficulties"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('insuranceDifficultiesDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="insurance_claims"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('insuranceClaimsDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Flooding
+            document.querySelectorAll('input[name="flooding"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('floodingDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="flood_defences"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('floodDefencesDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Japanese knotweed
+            document.querySelectorAll('input[name="japanese_knotweed"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('japaneseKnotweedDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Rights
+            document.querySelectorAll('input[name="rights_exercised"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('rightsExercisedDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="contribution_asked"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('contributionDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="rights_by_others"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('rightsByOthersDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // EV charger
+            document.querySelectorAll('input[name="ev_charger"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('evChargerDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Electrical works
+            document.querySelectorAll('input[name="electrical_works"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('electricalWorksDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Heating type other
+            document.querySelectorAll('input[name="heating_type"]').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.value === 'other') {
+                        document.getElementById('heatingOtherDetails').style.display = 
+                            e.target.checked ? 'block' : 'none';
+                    }
+                });
+            });
+
+            // Utilities
+            document.querySelectorAll('input[name="has_electricity"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('electricityDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="has_gas"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('gasDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="has_water"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('waterDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="has_broadband"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('broadbandDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            // Transaction
+            document.querySelectorAll('input[name="special_date_requirements"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('specialDateDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+
+            document.querySelectorAll('input[name="other_occupiers"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    document.getElementById('otherOccupiersDetails').style.display = 
+                        e.target.value === 'yes' ? 'block' : 'none';
+                });
+            });
+        }
+
+        function updateProgress() {
+            const progress = (currentSection / (totalSections + 1)) * 100;
+            progressFill.style.width = progress + '%';
+        }
+
+        function showSection(n) {
+            sections.forEach((section, index) => {
+                section.classList.remove('active');
+                if (index === n - 1) {
+                    section.classList.add('active');
+                }
+            });
+
+            prevBtn.style.display = n === 1 ? 'none' : 'inline-block';
+            
+            if (n === totalSections + 1) {
+                // Review section
+                nextBtn.textContent = 'Submit';
+                populateReview();
+            } else {
+                nextBtn.textContent = 'Next';
+            }
+
+            updateProgress();
+            updateSidebar();
+            window.scrollTo(0, 0);
+        }
+
+        function populateReview() {
+            const formData = new FormData(form);
+            const reviewContent = document.getElementById('reviewContent');
+            let html = '<div style="background: white; padding: 20px; border-radius: 8px;">';
+            
+            html += '<h3 style="color: #2c3e50; margin-bottom: 20px;">Summary of Your Responses</h3>';
+            html += '<p style="margin-bottom: 20px; color: #666;">Please review your answers carefully. Click "Previous" to make changes or "Submit" to complete the form.</p>';
+            
+            // Group responses by section
+            const sections = {
+                'Property Details': ['property_address', 'postcode', 'seller_names', 'seller_role'],
+                'Boundaries': ['boundary_left', 'boundary_right', 'boundary_rear', 'boundary_front'],
+                'Key Information': ['disputes_current', 'flooding', 'japanese_knotweed', 'listed_building']
+            };
+
+            for (const [sectionName, fields] of Object.entries(sections)) {
+                html += `<div style="margin-bottom: 25px;"><h4 style="color: #333; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #e0e0e0;">${sectionName}</h4>`;
+                
+                fields.forEach(field => {
+                    const value = formData.get(field);
+                    if (value) {
+                        const label = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        html += `<p style="margin: 8px 0;"><strong>${label}:</strong> ${value}</p>`;
+                    }
+                });
+                
+                html += '</div>';
+            }
+            
+            html += '<p style="margin-top: 30px; padding: 15px; background: #e8f4f8; border-left: 4px solid #3498db; font-size: 14px;">By submitting this form, you confirm that all information provided is accurate and complete to the best of your knowledge.</p>';
+            html += '</div>';
+            
+            reviewContent.innerHTML = html;
+        }
+
+        async function submitForm() {
+            const formData = new FormData(form);
+            const data = {};
+            
+            // Convert FormData to JSON
+            for (let [key, value] of formData.entries()) {
+                if (key === 'alterations' || key === 'warranties' || key === 'flooding_type' || 
+                    key === 'heating_type' || key === 'private_sewerage') {
+                    // Handle checkbox groups
+                    if (!data[key]) data[key] = [];
+                    data[key].push(value);
+                } else {
+                    data[key] = value;
+                }
+            }
+
+            // Check if form is signed and dated
+            const isSigned = data.seller_signature_name && data.signature_date;
+
+            // Build webhook URL with query parameters from the form URL
+            let webhookUrl = 'https://n8n.apex27.co.uk/webhook/c0f5adb9-737e-4974-8a16-8a047b60b12d';
+            if (urlParams.toString()) {
+                webhookUrl += '?' + urlParams.toString();
+            }
+
+            // Show loading state
+            const originalContent = document.querySelector('.form-content').innerHTML;
+            document.querySelector('.form-content').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>${isSigned ? 'Generating PDF and submitting form...' : 'Submitting your form...'}</p>
+                </div>
+            `;
+
+            try {
+                let pdfBase64 = null;
+                
+                // Generate PDF if signed
+                if (isSigned) {
+                    console.log('Form is signed, generating PDF...');
+                    pdfBase64 = await generatePDF(data);
+                    console.log('PDF generation result:', pdfBase64 ? 'Success' : 'Failed');
+                    if (pdfBase64) {
+                        console.log('PDF base64 length:', pdfBase64.length);
+                    }
+                }
+
+                // Prepare submission data
+                const submissionData = {
+                    ...data,
+                    pdf_generated: isSigned,
+                    pdf_document: pdfBase64
+                };
+                
+                console.log('Submitting form data...');
+                console.log('PDF included:', !!pdfBase64);
+
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(submissionData)
+                });
+
+                if (response.ok) {
+                    // Show success message
+                    document.querySelector('.form-content').innerHTML = `
+                        <div class="completion-screen">
+                            <div class="checkmark">✓</div>
+                            <h2>Form Submitted Successfully!</h2>
+                            <p>Thank you for completing the TA6 Property Information Form.</p>
+                            ${isSigned ? '<p style="margin-top: 20px; color: #666;">A signed PDF copy has been generated and included with your submission.</p>' : ''}
+                            <p style="margin-top: 20px; color: #666;">Your responses have been recorded and will be processed shortly.</p>
+                        </div>
+                    `;
+                } else {
+                    throw new Error('Submission failed');
+                }
+            } catch (error) {
+                alert('There was an error submitting the form. Please try again.');
+                document.querySelector('.form-content').innerHTML = originalContent;
+                showSection(currentSection);
+            }
+        }
+
+        // Generate PDF from form data using jsPDF
+        async function generatePDF(data) {
+            try {
+                console.log('Starting PDF generation...');
+                
+                // Check if jsPDF is loaded
+                if (!window.jspdf) {
+                    console.error('jsPDF library not loaded');
+                    return null;
+                }
+                
+                const { jsPDF } = window.jspdf;
+                console.log('jsPDF loaded successfully');
+                
+                const doc = new jsPDF();
+                console.log('jsPDF instance created');
+                
+                let yPosition = 20;
+                const pageHeight = doc.internal.pageSize.height;
+                const margin = 20;
+                const lineHeight = 7;
+                const maxWidth = 170;
+                
+                // Helper function to add new page if needed
+                const checkPageBreak = (neededSpace = 10) => {
+                    if (yPosition + neededSpace > pageHeight - margin) {
+                        doc.addPage();
+                        yPosition = 20;
+                        return true;
+                    }
+                    return false;
+                };
+                
+                // Helper to format array values
+                const formatArrayValue = (value) => {
+                    if (typeof value === 'string' && value.startsWith('[')) {
+                        try {
+                            const parsed = JSON.parse(value);
+                            return parsed.join(', ').replace(/_/g, ' ');
+                        } catch (e) {
+                            return value;
+                        }
+                    }
+                    if (Array.isArray(value)) {
+                        return value.join(', ').replace(/_/g, ' ');
+                    }
+                    return value;
+                };
+                
+                // Title
+                doc.setFontSize(18);
+                doc.setTextColor(44, 62, 80);
+                doc.setFont(undefined, 'bold');
+                doc.text('TA6 Property Information Form', 105, yPosition, { align: 'center' });
+                yPosition += 8;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text('6th Edition (2025)', 105, yPosition, { align: 'center' });
+                yPosition += 15;
+                
+                // Section helper
+                const addSection = (title) => {
+                    checkPageBreak(15);
+                    doc.setFillColor(232, 244, 248);
+                    doc.rect(margin, yPosition - 5, maxWidth, 10, 'F');
+                    doc.setFontSize(12);
+                    doc.setTextColor(52, 152, 219);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(title, margin + 2, yPosition);
+                    yPosition += 12;
+                    doc.setFontSize(10);
+                    doc.setTextColor(51, 51, 51);
+                    doc.setFont(undefined, 'normal');
+                };
+                
+                // Field helper
+                const addField = (label, value) => {
+                    if (!value || value === 'undefined' || value === '[]') return;
+                    
+                    checkPageBreak(15);
+                    doc.setFont(undefined, 'bold');
+                    doc.setTextColor(85, 85, 85);
+                    doc.text(label, margin, yPosition);
+                    yPosition += 5;
+                    
+                    doc.setFont(undefined, 'normal');
+                    doc.setTextColor(51, 51, 51);
+                    const lines = doc.splitTextToSize(String(value), maxWidth);
+                    lines.forEach(line => {
+                        checkPageBreak();
+                        doc.text(line, margin, yPosition);
+                        yPosition += lineHeight;
+                    });
+                    yPosition += 3;
+                };
+                
+                console.log('Adding content to PDF...');
+                
+                // 1. Property and Seller Details
+                addSection('1. Property and Seller Details');
+                addField('Property Address:', data.property_address);
+                addField('Postcode:', data.postcode);
+                if (data.uprn) addField('UPRN:', data.uprn);
+                addField('Seller Name(s):', data.seller_names);
+                addField('Role in Sale:', data.seller_role?.replace(/_/g, ' '));
+                addField('Ownership Date:', data.ownership_date);
+                
+                if (data.solicitor_firm) {
+                    yPosition += 5;
+                    addField('Solicitor Firm:', data.solicitor_firm);
+                    if (data.solicitor_contact) addField('Solicitor Contact:', data.solicitor_contact);
+                    if (data.solicitor_email) addField('Solicitor Email:', data.solicitor_email);
+                }
+                
+                // 2. Boundaries
+                addSection('2. Boundaries');
+                addField('Left Boundary:', data.boundary_left?.replace(/_/g, ' '));
+                addField('Right Boundary:', data.boundary_right?.replace(/_/g, ' '));
+                addField('Rear Boundary:', data.boundary_rear?.replace(/_/g, ' '));
+                addField('Front Boundary:', data.boundary_front?.replace(/_/g, ' '));
+                if (data.boundary_irregular) addField('Irregular Boundaries:', data.boundary_irregular);
+                if (data.boundary_changes === 'yes') addField('Boundary Changes:', data.boundary_changes_details || 'Yes');
+                if (data.party_wall === 'yes') addField('Party Wall Notices:', data.party_wall_details || 'Yes');
+                
+                // 3. Disputes
+                addSection('3. Disputes');
+                addField('Current Disputes:', data.disputes_current === 'yes' ? 'Yes' : 'No');
+                if (data.disputes_current === 'yes') addField('Dispute Details:', data.disputes_current_details);
+                addField('Potential Disputes:', data.disputes_potential === 'yes' ? 'Yes' : 'No');
+                if (data.disputes_potential === 'yes') addField('Details:', data.disputes_potential_details);
+                
+                // 4. Notices
+                addSection('4. Notices');
+                if (data.notices === 'yes') addField('Notices Received:', data.notices_details);
+                if (data.development_plans === 'yes') addField('Development Plans:', data.development_plans_details);
+                if (data.building_changes === 'yes') addField('Building Changes Nearby:', data.building_changes_details);
+                
+                // 5. Alterations
+                addSection('5. Alterations');
+                const alterations = formatArrayValue(data.alterations);
+                if (alterations && alterations !== '[]') {
+                    addField('Alterations Made:', alterations);
+                    if (data.alterations_work_details) addField('Work Details:', data.alterations_work_details);
+                    addField('Work Completed:', data.alterations_completed === 'yes' ? 'Yes' : 'No');
+                    if (data.alterations_permissions) {
+                        addField('Permissions Obtained:', data.alterations_permissions === 'yes' ? 'Yes' : 'No');
+                    }
+                }
+                addField('Non-Residential Use:', data.non_residential_use === 'yes' ? 'Yes' : 'No');
+                if (data.non_residential_use === 'yes') addField('Details:', data.non_residential_details);
+                addField('Listed Building:', data.listed_building?.replace(/_/g, ' ') || 'Not specified');
+                addField('Conservation Area:', data.conservation_area?.replace(/_/g, ' ') || 'Not specified');
+                if (data.tree_preservation === 'yes') {
+                    addField('Tree Preservation Orders:', 'Yes');
+                    if (data.tree_preservation_work_details) addField('TPO Details:', data.tree_preservation_work_details);
+                }
+                
+                // 6. Guarantees and Warranties
+                addSection('6. Guarantees and Warranties');
+                const warranties = formatArrayValue(data.warranties);
+                if (warranties && warranties !== '[]') {
+                    addField('Active Warranties:', warranties);
+                    if (data.warranty_other_type) addField('Other Warranty Type:', data.warranty_other_type);
+                }
+                if (data.warranty_claims === 'yes') addField('Warranty Claims:', data.warranty_claims_details);
+                if (data.warranty_breaches === 'yes') addField('Warranty Breaches:', data.warranty_breaches_details);
+                
+                // 7. Insurance
+                addSection('7. Insurance');
+                addField('Insured By:', data.insurance_holder === 'yes' ? 'Seller' : data.insurance_other_holder);
+                if (data.insurance_difficulties === 'yes') addField('Insurance Difficulties:', data.insurance_difficulties_details);
+                addField('Insurance Claims Made:', data.insurance_claims === 'yes' ? 'Yes' : 'No');
+                if (data.insurance_claims === 'yes') addField('Claim Details:', data.insurance_claims_details);
+                
+                // 8. Environmental Matters
+                addSection('8. Environmental Matters');
+                addField('Property Flooded:', data.flooding === 'yes' ? 'Yes' : 'No');
+                if (data.flooding === 'yes') {
+                    const floodTypes = formatArrayValue(data.flooding_type);
+                    if (floodTypes) addField('Flood Types:', floodTypes);
+                    if (data.flooding_details) addField('Flooding Details:', data.flooding_details);
+                }
+                if (data.flood_defences === 'yes') addField('Flood Defences:', data.flood_defences_details);
+                addField('Japanese Knotweed:', data.japanese_knotweed?.replace(/_/g, ' ') || 'Not known');
+                if (data.japanese_knotweed === 'yes' && data.knotweed_plan) {
+                    addField('Management Plan:', data.knotweed_plan === 'yes' ? 'Yes' : 'No');
+                }
+                
+                // 9. Rights and Arrangements
+                addSection('9. Rights and Arrangements');
+                if (data.rights_exercised === 'yes') addField('Rights Over Other Properties:', data.rights_exercised_details);
+                if (data.contribution_asked === 'yes') addField('Contribution to Shared Facilities:', data.contribution_details);
+                if (data.rights_by_others === 'yes') addField('Rights by Others Over Property:', data.rights_by_others_details);
+                addField('Services Crossing Out:', data.services_crossing_out?.replace(/_/g, ' ') || 'Not known');
+                addField('Services Crossing In:', data.services_crossing_in?.replace(/_/g, ' ') || 'Not known');
+                
+                // 10. Parking
+                addSection('10. Parking');
+                if (data.parking_arrangements) addField('Parking Arrangements:', data.parking_arrangements);
+                addField('Permit Required:', data.parking_permit === 'yes' ? 'Yes' : 'No');
+                addField('EV Charging Point:', data.ev_charger === 'yes' ? 'Yes' : 'No');
+                if (data.ev_charger === 'yes') addField('EV Charger Details:', data.ev_charger_details);
+                
+                // 11. Services
+                addSection('11. Services');
+                if (data.electrical_works === 'yes') addField('Electrical Works:', data.electrical_works_details);
+                const heatingTypes = formatArrayValue(data.heating_type);
+                if (heatingTypes && heatingTypes !== '[]') {
+                    addField('Heating Types:', heatingTypes);
+                    if (data.heating_other_type) addField('Other Heating:', data.heating_other_type);
+                }
+                if (data.heating_installation_date) addField('Heating System Installed:', data.heating_installation_date);
+                if (data.boiler_installation_date) addField('Boiler Installed:', data.boiler_installation_date);
+                if (data.heating_last_service_year) addField('Last Service:', data.heating_last_service_year);
+                
+                const privateSewerage = formatArrayValue(data.private_sewerage);
+                if (privateSewerage && privateSewerage !== '[]') {
+                    addField('Private Sewerage:', privateSewerage);
+                }
+                
+                // 12. Connection to Services
+                addSection('12. Connection to Services');
+                if (data.has_electricity === 'yes') addField('Electricity Provider:', data.electricity_provider);
+                if (data.has_gas === 'yes') addField('Gas Provider:', data.gas_provider);
+                if (data.has_water === 'yes') addField('Water Provider:', data.water_provider);
+                if (data.has_broadband === 'yes') addField('Broadband Provider:', data.broadband_provider);
+                
+                // 13. Transaction Information
+                addSection('13. Transaction Information');
+                addField('Sale Dependent on Purchase:', data.chain_dependent === 'yes' ? 'Yes' : 'No');
+                if (data.special_date_requirements === 'yes') addField('Special Date Requirements:', data.special_date_details);
+                addField('Seller Occupies Property:', data.seller_occupies === 'yes' ? 'Yes' : 'No');
+                addField('Other Occupiers (17+):', data.other_occupiers === 'yes' ? 'Yes' : 'No');
+                if (data.other_occupiers === 'yes') addField('Occupier Names:', data.other_occupiers_names);
+                addField('Vacant Possession:', data.vacant_possession === 'yes' ? 'Yes' : 'No');
+                
+                // 14. Completion
+                addSection('14. Completion');
+                addField('Sale Price Sufficient for Mortgage:', data.sufficient_for_mortgage === 'yes' ? 'Yes' : (data.sufficient_for_mortgage === 'no_mortgage' ? 'No mortgage' : 'No'));
+                
+                // 15. Additional Information
+                if (data.additional_information) {
+                    addSection('15. Additional Information');
+                    addField('Additional Details:', data.additional_information);
+                }
+                
+                // Signature
+                checkPageBreak(30);
+                yPosition += 10;
+                doc.setDrawColor(52, 152, 219);
+                doc.line(margin, yPosition, margin + maxWidth, yPosition);
+                yPosition += 10;
+                
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('Seller Declaration', margin, yPosition);
+                yPosition += 10;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                addField('Signed by:', data.seller_signature_name);
+                addField('Date:', data.signature_date);
+                
+                console.log('Adding footers...');
+                
+                // Footer on each page
+                const totalPages = doc.internal.pages.length - 1;
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(128, 128, 128);
+                    doc.text(`TA6 Property Information Form - Page ${i} of ${totalPages}`, 105, pageHeight - 10, { align: 'center' });
+                    doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, pageHeight - 10);
+                }
+                
+                console.log('Converting to base64...');
+                
+                // Convert to base64
+                const pdfOutput = doc.output('datauristring');
+                console.log('PDF output generated, length:', pdfOutput.length);
+                
+                const pdfBase64 = pdfOutput.split(',')[1];
+                console.log('PDF base64 generated, length:', pdfBase64.length);
+                
+                return pdfBase64;
+                
+            } catch (error) {
+                console.error('PDF generation failed with error:', error);
+                console.error('Error stack:', error.stack);
+                return null;
+            }
+        }
+                
+                let yPosition = 20;
+                const pageHeight = doc.internal.pageSize.height;
+                const margin = 20;
+                const lineHeight = 7;
+                const maxWidth = 170;
+                
+                // Helper function to add new page if needed
+                const checkPageBreak = (neededSpace = 10) => {
+                    if (yPosition + neededSpace > pageHeight - margin) {
+                        doc.addPage();
+                        yPosition = 20;
+                        return true;
+                    }
+                    return false;
+                };
+                
+                // Helper to format array values
+                const formatArrayValue = (value) => {
+                    if (typeof value === 'string' && value.startsWith('[')) {
+                        try {
+                            const parsed = JSON.parse(value);
+                            return parsed.join(', ').replace(/_/g, ' ');
+                        } catch (e) {
+                            return value;
+                        }
+                    }
+                    if (Array.isArray(value)) {
+                        return value.join(', ').replace(/_/g, ' ');
+                    }
+                    return value;
+                };
+                
+                // Title
+                doc.setFontSize(18);
+                doc.setTextColor(44, 62, 80);
+                doc.setFont(undefined, 'bold');
+                doc.text('TA6 Property Information Form', 105, yPosition, { align: 'center' });
+                yPosition += 8;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text('6th Edition (2025)', 105, yPosition, { align: 'center' });
+                yPosition += 15;
+                
+                // Section helper
+                const addSection = (title) => {
+                    checkPageBreak(15);
+                    doc.setFillColor(232, 244, 248);
+                    doc.rect(margin, yPosition - 5, maxWidth, 10, 'F');
+                    doc.setFontSize(12);
+                    doc.setTextColor(52, 152, 219);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(title, margin + 2, yPosition);
+                    yPosition += 12;
+                    doc.setFontSize(10);
+                    doc.setTextColor(51, 51, 51);
+                    doc.setFont(undefined, 'normal');
+                };
+                
+                // Field helper
+                const addField = (label, value) => {
+                    if (!value || value === 'undefined' || value === '[]') return;
+                    
+                    checkPageBreak(15);
+                    doc.setFont(undefined, 'bold');
+                    doc.setTextColor(85, 85, 85);
+                    doc.text(label, margin, yPosition);
+                    yPosition += 5;
+                    
+                    doc.setFont(undefined, 'normal');
+                    doc.setTextColor(51, 51, 51);
+                    const lines = doc.splitTextToSize(String(value), maxWidth);
+                    lines.forEach(line => {
+                        checkPageBreak();
+                        doc.text(line, margin, yPosition);
+                        yPosition += lineHeight;
+                    });
+                    yPosition += 3;
+                };
+                
+                // 1. Property and Seller Details
+                addSection('1. Property and Seller Details');
+                addField('Property Address:', data.property_address);
+                addField('Postcode:', data.postcode);
+                if (data.uprn) addField('UPRN:', data.uprn);
+                addField('Seller Name(s):', data.seller_names);
+                addField('Role in Sale:', data.seller_role?.replace(/_/g, ' '));
+                addField('Ownership Date:', data.ownership_date);
+                
+                if (data.solicitor_firm) {
+                    yPosition += 5;
+                    addField('Solicitor Firm:', data.solicitor_firm);
+                    if (data.solicitor_contact) addField('Solicitor Contact:', data.solicitor_contact);
+                    if (data.solicitor_email) addField('Solicitor Email:', data.solicitor_email);
+                }
+                
+                // 2. Boundaries
+                addSection('2. Boundaries');
+                addField('Left Boundary:', data.boundary_left?.replace(/_/g, ' '));
+                addField('Right Boundary:', data.boundary_right?.replace(/_/g, ' '));
+                addField('Rear Boundary:', data.boundary_rear?.replace(/_/g, ' '));
+                addField('Front Boundary:', data.boundary_front?.replace(/_/g, ' '));
+                if (data.boundary_irregular) addField('Irregular Boundaries:', data.boundary_irregular);
+                if (data.boundary_changes === 'yes') addField('Boundary Changes:', data.boundary_changes_details || 'Yes');
+                if (data.party_wall === 'yes') addField('Party Wall Notices:', data.party_wall_details || 'Yes');
+                
+                // 3. Disputes
+                addSection('3. Disputes');
+                addField('Current Disputes:', data.disputes_current === 'yes' ? 'Yes' : 'No');
+                if (data.disputes_current === 'yes') addField('Dispute Details:', data.disputes_current_details);
+                addField('Potential Disputes:', data.disputes_potential === 'yes' ? 'Yes' : 'No');
+                if (data.disputes_potential === 'yes') addField('Details:', data.disputes_potential_details);
+                
+                // 4. Notices
+                addSection('4. Notices');
+                if (data.notices === 'yes') addField('Notices Received:', data.notices_details);
+                if (data.development_plans === 'yes') addField('Development Plans:', data.development_plans_details);
+                if (data.building_changes === 'yes') addField('Building Changes Nearby:', data.building_changes_details);
+                
+                // 5. Alterations
+                addSection('5. Alterations');
+                const alterations = formatArrayValue(data.alterations);
+                if (alterations && alterations !== '[]') {
+                    addField('Alterations Made:', alterations);
+                    if (data.alterations_work_details) addField('Work Details:', data.alterations_work_details);
+                    addField('Work Completed:', data.alterations_completed === 'yes' ? 'Yes' : 'No');
+                    if (data.alterations_permissions) {
+                        addField('Permissions Obtained:', data.alterations_permissions === 'yes' ? 'Yes' : 'No');
+                    }
+                }
+                addField('Non-Residential Use:', data.non_residential_use === 'yes' ? 'Yes' : 'No');
+                if (data.non_residential_use === 'yes') addField('Details:', data.non_residential_details);
+                addField('Listed Building:', data.listed_building?.replace(/_/g, ' ') || 'Not specified');
+                addField('Conservation Area:', data.conservation_area?.replace(/_/g, ' ') || 'Not specified');
+                if (data.tree_preservation === 'yes') {
+                    addField('Tree Preservation Orders:', 'Yes');
+                    if (data.tree_preservation_work_details) addField('TPO Details:', data.tree_preservation_work_details);
+                }
+                
+                // 6. Guarantees and Warranties
+                addSection('6. Guarantees and Warranties');
+                const warranties = formatArrayValue(data.warranties);
+                if (warranties && warranties !== '[]') {
+                    addField('Active Warranties:', warranties);
+                    if (data.warranty_other_type) addField('Other Warranty Type:', data.warranty_other_type);
+                }
+                if (data.warranty_claims === 'yes') addField('Warranty Claims:', data.warranty_claims_details);
+                if (data.warranty_breaches === 'yes') addField('Warranty Breaches:', data.warranty_breaches_details);
+                
+                // 7. Insurance
+                addSection('7. Insurance');
+                addField('Insured By:', data.insurance_holder === 'yes' ? 'Seller' : data.insurance_other_holder);
+                if (data.insurance_difficulties === 'yes') addField('Insurance Difficulties:', data.insurance_difficulties_details);
+                addField('Insurance Claims Made:', data.insurance_claims === 'yes' ? 'Yes' : 'No');
+                if (data.insurance_claims === 'yes') addField('Claim Details:', data.insurance_claims_details);
+                
+                // 8. Environmental Matters
+                addSection('8. Environmental Matters');
+                addField('Property Flooded:', data.flooding === 'yes' ? 'Yes' : 'No');
+                if (data.flooding === 'yes') {
+                    const floodTypes = formatArrayValue(data.flooding_type);
+                    if (floodTypes) addField('Flood Types:', floodTypes);
+                    if (data.flooding_details) addField('Flooding Details:', data.flooding_details);
+                }
+                if (data.flood_defences === 'yes') addField('Flood Defences:', data.flood_defences_details);
+                addField('Japanese Knotweed:', data.japanese_knotweed?.replace(/_/g, ' ') || 'Not known');
+                if (data.japanese_knotweed === 'yes' && data.knotweed_plan) {
+                    addField('Management Plan:', data.knotweed_plan === 'yes' ? 'Yes' : 'No');
+                }
+                
+                // 9. Rights and Arrangements
+                addSection('9. Rights and Arrangements');
+                if (data.rights_exercised === 'yes') addField('Rights Over Other Properties:', data.rights_exercised_details);
+                if (data.contribution_asked === 'yes') addField('Contribution to Shared Facilities:', data.contribution_details);
+                if (data.rights_by_others === 'yes') addField('Rights by Others Over Property:', data.rights_by_others_details);
+                addField('Services Crossing Out:', data.services_crossing_out?.replace(/_/g, ' ') || 'Not known');
+                addField('Services Crossing In:', data.services_crossing_in?.replace(/_/g, ' ') || 'Not known');
+                
+                // 10. Parking
+                addSection('10. Parking');
+                if (data.parking_arrangements) addField('Parking Arrangements:', data.parking_arrangements);
+                addField('Permit Required:', data.parking_permit === 'yes' ? 'Yes' : 'No');
+                addField('EV Charging Point:', data.ev_charger === 'yes' ? 'Yes' : 'No');
+                if (data.ev_charger === 'yes') addField('EV Charger Details:', data.ev_charger_details);
+                
+                // 11. Services
+                addSection('11. Services');
+                if (data.electrical_works === 'yes') addField('Electrical Works:', data.electrical_works_details);
+                const heatingTypes = formatArrayValue(data.heating_type);
+                if (heatingTypes && heatingTypes !== '[]') {
+                    addField('Heating Types:', heatingTypes);
+                    if (data.heating_other_type) addField('Other Heating:', data.heating_other_type);
+                }
+                if (data.heating_installation_date) addField('Heating System Installed:', data.heating_installation_date);
+                if (data.boiler_installation_date) addField('Boiler Installed:', data.boiler_installation_date);
+                if (data.heating_last_service_year) addField('Last Service:', data.heating_last_service_year);
+                
+                const privateSewerage = formatArrayValue(data.private_sewerage);
+                if (privateSewerage && privateSewerage !== '[]') {
+                    addField('Private Sewerage:', privateSewerage);
+                }
+                
+                // 12. Connection to Services
+                addSection('12. Connection to Services');
+                if (data.has_electricity === 'yes') addField('Electricity Provider:', data.electricity_provider);
+                if (data.has_gas === 'yes') addField('Gas Provider:', data.gas_provider);
+                if (data.has_water === 'yes') addField('Water Provider:', data.water_provider);
+                if (data.has_broadband === 'yes') addField('Broadband Provider:', data.broadband_provider);
+                
+                // 13. Transaction Information
+                addSection('13. Transaction Information');
+                addField('Sale Dependent on Purchase:', data.chain_dependent === 'yes' ? 'Yes' : 'No');
+                if (data.special_date_requirements === 'yes') addField('Special Date Requirements:', data.special_date_details);
+                addField('Seller Occupies Property:', data.seller_occupies === 'yes' ? 'Yes' : 'No');
+                addField('Other Occupiers (17+):', data.other_occupiers === 'yes' ? 'Yes' : 'No');
+                if (data.other_occupiers === 'yes') addField('Occupier Names:', data.other_occupiers_names);
+                addField('Vacant Possession:', data.vacant_possession === 'yes' ? 'Yes' : 'No');
+                
+                // 14. Completion
+                addSection('14. Completion');
+                addField('Sale Price Sufficient for Mortgage:', data.sufficient_for_mortgage === 'yes' ? 'Yes' : (data.sufficient_for_mortgage === 'no_mortgage' ? 'No mortgage' : 'No'));
+                
+                // 15. Additional Information
+                if (data.additional_information) {
+                    addSection('15. Additional Information');
+                    addField('Additional Details:', data.additional_information);
+                }
+                
+                // Signature
+                checkPageBreak(30);
+                yPosition += 10;
+                doc.setDrawColor(52, 152, 219);
+                doc.line(margin, yPosition, margin + maxWidth, yPosition);
+                yPosition += 10;
+                
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('Seller Declaration', margin, yPosition);
+                yPosition += 10;
+                
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                addField('Signed by:', data.seller_signature_name);
+                addField('Date:', data.signature_date);
+                
+                // Footer on each page
+                const totalPages = doc.internal.pages.length - 1;
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(128, 128, 128);
+                    doc.text(`TA6 Property Information Form - Page ${i} of ${totalPages}`, 105, pageHeight - 10, { align: 'center' });
+                    doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, pageHeight - 10);
+                }
+                
+                // Convert to base64
+                const pdfBase64 = doc.output('datauristring').split(',')[1];
+                return pdfBase64;
+                
+            } catch (error) {
+                console.error('PDF generation failed:', error);
+                return null;
+            }
+        }
+
+        nextBtn.addEventListener('click', () => {
+            if (currentSection === totalSections + 1) {
+                // Submit form
+                submitForm();
+            } else {
+                currentSection++;
+                showSection(currentSection);
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentSection > 1) {
+                currentSection--;
+                showSection(currentSection);
+            }
+        });
+
+        // Initialize
+        setupConditionalFields();
+        loadExistingData(); // Load existing data if query params present
+        showSection(1);
+
+        // Update sidebar when form fields change
+        form.addEventListener('change', () => {
+            updateSidebar();
+        });
+
+        form.addEventListener('input', () => {
+            updateSidebar();
+        });
+    </script>
+</body>
+</html>
